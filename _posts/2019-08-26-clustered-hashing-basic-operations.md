@@ -1,7 +1,7 @@
 ---
 layout: post
-title:  "Clustered Hashing: A Special Case of Robinhood Hashing"
-date:   2019-08-15 17:02:14 -0700
+title:  "Clustered Hashing: Basic Operations"
+date:   2019-08-26 17:02:14 -0700
 categories: algo
 ---
 
