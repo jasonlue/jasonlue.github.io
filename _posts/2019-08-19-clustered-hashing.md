@@ -14,12 +14,13 @@ Unsurprisingly the dictionary is implemented as chain-linked hash table. Why cha
 ## Speed up Lookup
 
 ### Unsorted List
+
 For a list of N items, the worst time used to look up a specific item is O(N). You basically look at them one by one. You cannot do worse than that. The items don't have to be in order, so insert happens at the end as append so insert takes O(1). Remove takes the same as lookup O(N), because you need to find it first in O(N). To remove it, you move the last item to occupy the spot and shrink list by one. The items don't have to use more space than necessary to store them.
 
-`Lookup: O(N)`  
-`Insert: O(1)`  
-`Remove: O(N)`  
-`Space : O(N)`  
+    Lookup: O(N)
+    Insert: O(1)
+    Remove: O(N)
+    Space : O(N)  
 
 Now we want to do better in lookup. Considering in computer science (and in every aspects of real life), there's no free lunch. We have to see what can we sacrifice to speed up the lookup.
 
@@ -27,10 +28,10 @@ Now we want to do better in lookup. Considering in computer science (and in ever
 
 If we sacrifice time used in insert a bit, we can keep the list in order. You can use binary search for lookup in O(lgN) time. For Insert, we first need to find the right position, same as lookup in O(lgN), then we need to shift all items by one to the right to make room for the new item, and that's O(N). Remove is similar to Insert, you need to find the item first in O(lgN) time, and then you need to shift left all items on the right of the position by one.
 
-`Lookup: O(lgN)`  
-`Insert: O(lgN) + O(N) = O(N)`  
-`Remove: O(lgN) + O(N) = O(N)`  
-`Space : O(N)`  
+    Lookup: O(lgN)
+    Insert: O(lgN) + O(N) = O(N)
+    Remove: O(lgN) + O(N) = O(N)
+    Space : O(N)
 
 Wait, you'd think, insert and remove can be as fast as O(lgN) if we use single link list. But can you do binary search in an sorted link list? You simply have to look one by one. This solution is worst the basic unsorted one in every aspect. And don't forget, by using link list, you use more space, as pointers occupy space, not small, 8 bytes each. We will revisit this later.
 
@@ -40,19 +41,19 @@ So keep list in order improves lookup greatly, but with heavy sacrifice on inser
 
 The next idea is to sacrice space. If adding one pointer on the item  doesn't work, How about adding two? If each item contains two pointers, we can maintain it as a binary search tree. The idea of BST is to keep items sorted, but in a special binary tree form. Lookup can perform binary search just like sorted list, but insert and remove are almost as fast as lookup. After finding the item or position, you don't need to shift items back and forth. You simply change pointers to insert and remove, which takes constant time. Assume the binary tree is balanced because a variation of the BST, red black tree, can keep the tree balanced with a small price (`lgN` swaps).
 
-`Lookup: O(lgN)`  
-`Insert: O(lgN)`  
-`Remove: O(lgN)`  
-`Space : O(N)`  
+    Lookup: O(lgN)
+    Insert: O(lgN)
+    Remove: O(lgN) 
+    Space : O(N)
 
 This is good, isn't it? Not so fast.  As each item now requires two pointers, and each pointer is 8 bytes in 64bit CPU system, each item consumes 16 extra bytes. Suppose average item size is S, we have D=(8+8+S)/S. The space is actually O(DN). Theorectically O(DN) = O(N), but in reality you still uses D times memory than necessary. For an integer of 4 bytes, D=5.
 
 Doesn't indirection of pointers consume computer time? For each item, you have to follow its pointers to another item. Suppose read item takes x amount of time, and load extra pointer take y amount of time, lookup actually takes O(lg((x+y)/xN) = O(lg(CN)) = O(lgC+lgN), given C=(x+y)/x. When x is small, such as read an 4-byte integer, load 8-byte takes at least same amount of time. So you could easily double the lookup time. It can be even worse... When items approach certain large counts, random pointers cause cache misses: the item pointed to is not in the current cache and CPU needs to reload it from the RAM. This is very costly. We will revisit it later. So the acutally binary search tree performance is:
 
-`Lookup: O(lgCN) = O(lgC + lgN)`  
-`Insert: O(lgCN) = O(lgC + lgN)`  
-`Remove: O(lgCN) = O(lgC + lgN)`  
-`Space : O(DN)`  
+    Lookup: O(lgCN) = O(lgC + lgN)
+    Insert: O(lgCN) = O(lgC + lgN)
+    Remove: O(lgCN) = O(lgC + lgN)
+    Space : O(DN)
 
 Sacrifice in insert and remove to the extreme make lookup as fast as O(lgN). To go further, we only have space to sacrifice. If we leave spaces among items on purpose, can we do better on lookup? Yes we can! Here comes in picture: hash table.
 
@@ -64,10 +65,10 @@ For a item with key, we calculate an integer called hash through a hash function
 
 To lookup item, we do the same: `hash=H(key), bucket=M(hash, table_size)` table[bucket] is the item. Insert and remove are the same. find the bucket, then put to position or remove from the position (special mark). so,
 
-`Lookup: O(1)`  
-`Insert: O(1)`  
-`Remove: O(1)`  
-`Space : O(DN)`  
+    Lookup: O(1)
+    Insert: O(1)
+    Remove: O(1)
+    Space : O(DN)
 
 1/D is called load factor, which is usually 30-50%. So D is 2x - 3x N. For a small item such as integer, the space is even smaller than BST!
 
@@ -105,11 +106,10 @@ To remove, we first lookup to see if it exists. If it doesn't, then return. It t
 
 For each item with size S, it uses one extra pointer, 8 bytes. It also uses the whole extra table to store heads of single link list. Table_Size = DN, D is usually 2-3. For each item we use `S+8+8D` bytes. let E=(S+8+8D)/S, we use O(EN) spaces. 
 
-
-`Lookup: O(CL)`  
-`Insert: O(CL)`  
-`Remove: O(CL)`  
-`Space : O(EN)`  
+    Lookup: O(CL)
+    Insert: O(CL)
+    Remove: O(CL)
+    Space : O(EN)
 
 As L is usually < 2, this is reasonable fast.
 
@@ -123,31 +123,71 @@ So what's the reasonable next step? Well, Obviously, While maintainng the  perfo
 
 ### Open Addressing Hash Table
 
-Withoug chaining conflicts together, the only option is to find another bucket. The process of finding another empty spot is called probing. To insert an item while its bucket is taken, there are two ways. 
+Withoug chaining conflicts together, the only other option is to find another bucket. The process of finding another empty spot is called probing. To insert an item while its bucket is taken, there are two ways.
 
-One way is to add a step parameter in mapping function `M(hash, table_size)` : `M'(hash, table_size, i)`, where i starts from 0 forward. G' usually increase with i. Keep increasing i until it reaches the end of table or empty spot. This adds uncertainty to the hash table. Anther simpler probing is called linear probing. It basically find the next position availabe from its bucket.
+#### Apply a step parameter on Mapping function M
+
+One way is to add a step parameter in mapping function.
+
+    `M'(hash, table_size, i) = M(M(hash,table_size) + F(i), table_size)
+
+where i starts from 0 forward. Keep increasing i until finds empty spot. A typical example of this type is linear probing.
+
+##### Linear Probing
+
+    F(i) = i
+
+If bucket of the item is not empty, Linear Probing finds the next position available. If i reaches the end of the table, it wraps around and start from 0 again. The maximum step is the table_size. It's guaranteed the next available position will be located within table_size steps when the table is not full.
 
 Below is a example of open addressing hashing table with linear probing of the same elements in chained hash table. A open addring hash table is often slightly larger than the advertized table size to have a overflow region at the end to accomodate keys that falls into the last bucket in the table.
 
-Also noted is that the actual content of the table depends on the order of items inserted. Insert the same elements in another order renders very different picture.
+Also noted is that the actual content of the table depends on the order of items inserted. Insert the same elements in another order renders a very different picture. 
 
-![open addreing hash](/img/hash-table-open-addressing-linear-probing.dot.png)
+Item 10,11,12,17 are inserted into their buckets respectively. 
 
+For item 21, bucket(21)=1, but bucket 1 is occupied by 11. It increase i to 1, bucket 2 is still occupied by 12. Increase i to 2, bucket 3 is empty. So 21 is inserted to bucket 3. i=2. In linear search, i is actually the distance from its position to its bucket.
 
-Another way is to add step parameter to hash function H: `hash=H(key)` to `hash=H'(key,i)` where i starts from 0 forward. This is called rehashing. It rehashes until an empty position is found.
+For item 22, bucket(22)=2, but bucket 2 is occupied by 2. Increase step i to 1, bucket 3 is occupied by 21. Increase i again to 2, bucket 4 is empty. So 22 is inserted to bucket 4 and the distance is 2.
 
-While saving space, open address hash table adds some uncertainties. At any point, you don't easily know where the item is stored. It doesn't seem to have clear invariants (that property of the data structure that's always true).  In chain-linked hash table, you know every item in the list, the bucket it maps to from key `M(H(key))` is the index its head is in. Before and after every operation you can put assertions on this property to make sure the operation is correctly performed. How do you verify that for an open address hash table? After insertion you can verify that lookup returns the correctly item and after deletion the lookup of the item fails. This is probably the best you can do. This is concerning for debugging and testing. You probabaly wouldn't count on it to launch a rocket.
+27,32, and 37 are inserted following the same logic as 22.
 
-Even if the open address hash table is corectly implemented, the other uncertainty during runtime is also a major drawback: There is no upbound for how many steps you have to rehash or remap before you find the item. The same item may be found in one try, or it may be found in 1000+ tries. Even worse, lookup of an item that's not in the table takes most of time.
+47 insertion is a bit tricky. bucket(47) = 7, but bucket 7 is occupied by 17. i=1, bucket 8 is occupied by 27 and i=2 bucket 9 is occupied by 37. i=3 bucket 10 reached the end of the table. So it wrapped around: to bucket 0. Only until i=9 (table_size-1, the most distant), bucket 6 is available for insertion. 47 eventually is inserted in bucket 6.
 
-If rehash/remap eventually leads to these two uncertainties, what can we do to improve? Just as the thought process along the way, to make lookup more consistent, we have to think what we can sacrifice. From unsorted list to sorted list, we sacrifice the performance of `insert` for a better performance of lookup. From sorted list to binary search tree, we sacrifice space to improve `insert` and `delete`. From BST to chain-linked hash table we sacrifice more space to improve on `lookup`, `insert` and `remove`. From chain-linked hash table to open address hash table we try to recoup some space back while maintain performance of `lookup`, `insert` and `remove`. Now to improve the uncertainty of `lookup` as well as `insert` and `remove`, is there anything left that we can sacrifice?
+![open addressing hash](/img/hash-table-open-addressing-linear-probing.dot.png)
 
-As it turns out, there is. To improve the worst case `lookup`, we can sacrifice best case `lookup`. 
+To show how each item ends up, the table does not resize up (load factor=1) on purpose. When load factor < 1, the longest distance, table_size, will not be reached. However, as you can see, the distance grows dramatically when the table is getting pretty full. In the extremely case, lookup of item 47 has the worst performance of O(N).
+
+However, on the other hand, the memory is most efficiently used.
+
+#### Appy a step parameter on hash function
+
+We can also apply a step parameter directly on hash function H:
+
+    hash=H'(key,i)
+
+where i starts from 0 forward. So
+
+It rehashes until an empty position is found. There is no upbound of i in this case.
+
+#### Uncertainties
+
+While saving space, open address hash table adds some uncertainties.
+
+- There's a great deal of variance in lookup. 
+    Lookup in Chained Hash Table for an item that exists or not, takes an upbound of the most conflicts on the position. Unlike Chained Hash Table, Open Address Table usually has a great deal of variance in steps to find an item. The number is steps has little to do with the conflicts on that specific item. The same item may be found in one try, or it may be found in 1000+ tries. Even worse, lookup of an item that's not in the table takes most of time as it ends when an empty position is found.
+
+- There's no clear invariant on the data structure.
+    Chained Hash Table has a nice property: Every item in the chain belongs to the bucket it maps to from key `M(H(key))`. Before and after every operation you can put assertions on this property to make sure the operation is correctly performed. Items in Open Addressing Hash Table, either appear at its bucket, or they appear anywhere in the table. This makes some operations hard to verify.
+
+What can we do to improve? Just as the thought process along the way, to make lookup more consistent, we have to think what we can sacrifice. From unsorted list to sorted list, we sacrifice the performance of `insert` for a better performance of lookup. From sorted list to binary search tree, we sacrifice space to improve `insert` and `delete`. From BST to Chained Hash Table we sacrifice more space to improve on `lookup`, `insert` and `remove`. From Chained Hash Table to Open addressing Hash Table we try to recoup some space back while maintain performance of `lookup`, `insert` and `remove`. To improve the uncertainty of `lookup`, is there something we can sacrifice?
+
+As it turns out, there is. To improve the worst case `lookup`, we sacrifice best case `lookup`.
 
 ### Robinhood Hashing
 
-When we insert an item into hash table, we look for an empty position to put it in. Ideally the position is at its bucket. But if not, we keep looking for other positions via differnet strategies. Doing so we actually follow a hidden rule that when an item is in the table, we don't change its position anymore. Following this rule we can get a really bad position when the table is pretty full and an empty position is far away.
+When we insert an item into hash table, we look for an empty position to put it in. Ideally the position is at its bucket. But if not, we keep looking for other positions via differnet strategies. Doing so we actually follow a hidden rule that when an item is in the table, we don't change its position anymore. This rule can lead to a really bad position when the table is pretty full and an empty position is far away.
 
+The alternative is to adjust the position of existing items if necessary during insertion. Robinhood Hashing apply this rule on insertion, but remove is up to the implementers.
 
 
 
@@ -157,7 +197,7 @@ When we insert an item into hash table, we look for an empty position to put it 
 
 ## Lessons Learned
 
-**"There can be no progress, no achievements, without sacrifice, and a main's worldly success will be in the measure that he sacrifices." -James Allen, As a Man Thinketh**
+**"There can be no progress, no achievements, without sacrifice, and a man's worldly success will be in the measure that he sacrifices." -James Allen, As a Man Thinketh**
 
 
 ## References
