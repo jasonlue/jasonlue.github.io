@@ -155,57 +155,74 @@ bucket(21)=1, start from position 1.
 |2       |21, distance = 1|12, distance = 0|continue     |
 |3       |21, distance = 2|empty           |insert & done|
 
+![insert 21](/img/open-address-insert-21.dot.png)
+
 ##### insert 22
 
 bucket(22)=2, start from position 2.
 
 |position|in hand         |in position     |action       |
 | -------|----------------|----------------|-------------| 
-|2       |21, distance = 0|11, distance = 0|continue     |
-|3       |21, distance = 1|12, distance = 0|continue     |
-|4       |21, distance = 2|empty           |insert & done|
+|2       |22, distance = 0|12, distance = 0|continue     |
+|3       |22, distance = 1|21, distance = 2|continue     |
+|4       |22, distance = 2|empty           |insert & done|
+
+![insert 22](/img/open-address-insert-22.dot.png)
 
 ##### insert 27
 
-bucket(21)=1, start from position 1.
+bucket(27)=7, start from position 7.
 
 |position|in hand         |in position     |action       |
 | -------|----------------|----------------|-------------| 
-|1       |21, distance = 0|11, distance = 0|continue     |
-|2       |21, distance = 1|12, distance = 0|continue     |
-|3       |21, distance = 2|empty           |insert & done|
+|7       |27, distance = 0|17, distance = 0|continue     |
+|8       |27, distance = 1|empty           |insert & done|
+
+![insert 27](/img/open-address-insert-27.dot.png)
 
 ##### insert 32
 
-bucket(21)=1, start from position 1.
+bucket(32)=2, start from position 2.
 
 |position|in hand         |in position     |action       |
 | -------|----------------|----------------|-------------| 
-|1       |21, distance = 0|11, distance = 0|continue     |
-|2       |21, distance = 1|12, distance = 0|continue     |
-|3       |21, distance = 2|empty           |insert & done|
+|2       |32, distance = 0|12, distance = 0|continue     |
+|3       |32, distance = 1|21, distance = 2|continue     |
+|4       |32, distance = 2|22, distance = 2|continue     |
+|5       |32, distance = 3|empty           |insert & done|
+
+![insert 32](/img/open-address-insert-32.dot.png)
 
 ##### insert 37
 
-bucket(21)=1, start from position 1.
+bucket(37)=7, start from position 7.
 
 |position|in hand         |in position     |action       |
 | -------|----------------|----------------|-------------| 
-|1       |21, distance = 0|11, distance = 0|continue     |
-|2       |21, distance = 1|12, distance = 0|continue     |
-|3       |21, distance = 2|empty           |insert & done|
+|7       |37, distance = 0|17, distance = 0|continue     |
+|8       |37, distance = 1|27, distance = 1|continue     |
+|9       |37, distance = 2|empty           |insert & done|
+
+![insert 37](/img/open-address-insert-37.dot.png)
 
 ##### insert 47
 
-bucket(21)=1, start from position 1.
+bucket(47)=7, start from position 7.
 
 |position|in hand         |in position     |action       |
 | -------|----------------|----------------|-------------| 
-|1       |21, distance = 0|11, distance = 0|continue     |
-|2       |21, distance = 1|12, distance = 0|continue     |
-|3       |21, distance = 2|empty           |insert & done|
+|7       |47, distance = 0|17, distance = 0|continue     |
+|8       |47, distance = 1|27, distance = 1|continue     |
+|9       |47, distance = 2|37, distance = 2|continue     |
+|0       |47, distance = 3|10, distance = 0|continue     |
+|1       |47, distance = 4|11, distance = 0|continue     |
+|2       |47, distance = 5|12, distance = 0|continue     |
+|3       |47, distance = 6|21, distance = 2|continue     |
+|4       |47, distance = 7|22, distance = 2|continue     |
+|5       |47, distance = 8|32, distance = 3|continue     |
+|6       |47, distance = 9|empty           |insert & done|
 
-![open addressing hash](/img/hash-table-open-addressing-linear-probing.dot.png)
+![insert 47](/img/open-address-insert-47.dot.png)
 
 To show how each item ends up, the table does not resize up (load factor=1) on purpose. When load factor < 1, the longest distance, table_size, will not be reached. However, as you can see, the distance grows dramatically when the table is getting pretty full. In the extremely case, lookup of item 47 has the worst performance of O(N).
 
