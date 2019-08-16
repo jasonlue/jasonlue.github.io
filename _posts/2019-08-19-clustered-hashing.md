@@ -145,13 +145,65 @@ Also noted is that the actual content of the table depends on the order of items
 
 Item 10,11,12,17 are inserted into their buckets respectively. 
 
-For item 21, bucket(21)=1, but bucket 1 is occupied by 11. It increase i to 1, bucket 2 is still occupied by 12. Increase i to 2, bucket 3 is empty. So 21 is inserted to bucket 3. i=2. In linear search, i is actually the distance from its position to its bucket.
+##### insert 21
 
-For item 22, bucket(22)=2, but bucket 2 is occupied by 12. Increase step i to 1, bucket 3 is occupied by 21. Increase i again to 2, bucket 4 is empty. So 22 is inserted to bucket 4 and the distance is 2.
+bucket(21)=1, start from position 1.
 
-27,32, and 37 are inserted following the same logic as 22.
+|position|in hand         |in position     |action       |
+| -------|----------------|----------------|-------------| 
+|1       |21, distance = 0|11, distance = 0|continue     |
+|2       |21, distance = 1|12, distance = 0|continue     |
+|3       |21, distance = 2|empty           |insert & done|
 
-47 insertion is a bit tricky. bucket(47) = 7, but bucket 7 is occupied by 17. i=1, bucket 8 is occupied by 27 and i=2 bucket 9 is occupied by 37. i=3 bucket 10 reached the end of the table. So it wrapped around: to bucket 0. Only until i=9 (table_size-1, the most distant), bucket 6 is available for insertion. 47 eventually is inserted in bucket 6.
+##### insert 22
+
+bucket(22)=2, start from position 2.
+
+|position|in hand         |in position     |action       |
+| -------|----------------|----------------|-------------| 
+|2       |21, distance = 0|11, distance = 0|continue     |
+|3       |21, distance = 1|12, distance = 0|continue     |
+|4       |21, distance = 2|empty           |insert & done|
+
+##### insert 27
+
+bucket(21)=1, start from position 1.
+
+|position|in hand         |in position     |action       |
+| -------|----------------|----------------|-------------| 
+|1       |21, distance = 0|11, distance = 0|continue     |
+|2       |21, distance = 1|12, distance = 0|continue     |
+|3       |21, distance = 2|empty           |insert & done|
+
+##### insert 32
+
+bucket(21)=1, start from position 1.
+
+|position|in hand         |in position     |action       |
+| -------|----------------|----------------|-------------| 
+|1       |21, distance = 0|11, distance = 0|continue     |
+|2       |21, distance = 1|12, distance = 0|continue     |
+|3       |21, distance = 2|empty           |insert & done|
+
+##### insert 37
+
+bucket(21)=1, start from position 1.
+
+|position|in hand         |in position     |action       |
+| -------|----------------|----------------|-------------| 
+|1       |21, distance = 0|11, distance = 0|continue     |
+|2       |21, distance = 1|12, distance = 0|continue     |
+|3       |21, distance = 2|empty           |insert & done|
+
+##### insert 47
+
+bucket(21)=1, start from position 1.
+
+|position|in hand         |in position     |action       |
+| -------|----------------|----------------|-------------| 
+|1       |21, distance = 0|11, distance = 0|continue     |
+|2       |21, distance = 1|12, distance = 0|continue     |
+|3       |21, distance = 2|empty           |insert & done|
 
 ![open addressing hash](/img/hash-table-open-addressing-linear-probing.dot.png)
 
