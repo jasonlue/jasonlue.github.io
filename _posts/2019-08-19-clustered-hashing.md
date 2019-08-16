@@ -139,7 +139,7 @@ where i starts from 0 forward. Keep increasing i until finds empty spot. A typic
 
 If bucket of the item is not empty, Linear Probing finds the next position available. If i reaches the end of the table, it wraps around and start from 0 again. The maximum step is the table_size. It's guaranteed the next available position will be located within table_size steps when the table is not full.
 
-Below is a example of open addressing hashing table with linear probing of the same elements in chained hash table. A open addring hash table is often slightly larger than the advertized table size to have a overflow region at the end to accomodate keys that falls into the last bucket in the table.
+Below is an example of the open addressing hashing table with linear probing of the same elements in chained hash table. A open addring hash table is often slightly larger than the advertized table size to have a overflow region at the end to accomodate keys that falls into the last bucket in the table.
 
 Also noted is that the actual content of the table depends on the order of items inserted. Insert the same elements in another order renders a very different picture. 
 
@@ -147,7 +147,7 @@ Item 10,11,12,17 are inserted into their buckets respectively.
 
 For item 21, bucket(21)=1, but bucket 1 is occupied by 11. It increase i to 1, bucket 2 is still occupied by 12. Increase i to 2, bucket 3 is empty. So 21 is inserted to bucket 3. i=2. In linear search, i is actually the distance from its position to its bucket.
 
-For item 22, bucket(22)=2, but bucket 2 is occupied by 2. Increase step i to 1, bucket 3 is occupied by 21. Increase i again to 2, bucket 4 is empty. So 22 is inserted to bucket 4 and the distance is 2.
+For item 22, bucket(22)=2, but bucket 2 is occupied by 12. Increase step i to 1, bucket 3 is occupied by 21. Increase i again to 2, bucket 4 is empty. So 22 is inserted to bucket 4 and the distance is 2.
 
 27,32, and 37 are inserted following the same logic as 22.
 
@@ -187,7 +187,70 @@ As it turns out, there is. To improve the worst case `lookup`, we sacrifice best
 
 When we insert an item into hash table, we look for an empty position to put it in. Ideally the position is at its bucket. But if not, we keep looking for other positions via differnet strategies. Doing so we actually follow a hidden rule that when an item is in the table, we don't change its position anymore. This rule can lead to a really bad position when the table is pretty full and an empty position is far away.
 
-The alternative is to adjust the position of existing items if necessary during insertion. Robinhood Hashing apply this rule on insertion, but remove is up to the implementers.
+The alternative is to adjust the position of existing items if necessary during insertion. When looking for empty positions to insert the new item, Robinhood Hashing compares the to-be-inserted item distance from its bucket if it's inserted on the current position, if it's longer than the distance of the item occupying the current position. the to-be-inserted item swaps the item out and takes the position. Then it continues to look forward to insert the swapped out item. When it reaches the end of the table, it wraps around from beginning.
+
+Robinhood Hashing can be applied to any open addressing hash item idea. Let's investigate how it applies to simplest case: linear probing.
+
+We take the same table size and insert the same items as in previous Open Hashing table: insert 10,11,12,17,21,22,27,32,37,47 to hash table of size 10.
+
+#### insert 10,11,12,17
+
+Item 10,11,12,17 are inserted into their buckets respectively, which is the same as in Open Address Linear Probing.
+
+![insert 10,11,12,17](/img/robinhood-linear-probing-insert-10-11-12-17.dot.png)
+
+#### insert 21
+
+bucket(21)=1, start from position 1.
+<table>
+<tr><td> position</td> <td>in hand</td><td>in position</td> <td>distance comparison</td><td>action</td></tr>
+<tr><td> 1</td> <td>21, distance = 0</td><td>11, distance = 0</td><td>same</td><td>continue</td></tr>
+<tr><td> 2</td> <td>21, distance = 1</td><td>12, distance = 0</td><td>shorter</td><td>swap</td></tr>
+<tr><td> 3</td> <td>12, distance = 1</td><td>empty</td><td>shorter</td><td>insert & done.</td></tr>
+</table>
+
+![insert 21](/img/robinhood-linear-probing-insert-21.dot.png)
+
+#### insert 22
+
+bucket(22)=2, start from position 2.
+<table>
+<tr><td> position</td> <td>in hand</td><td>in position</td> <td>distance comparison</td><td>action</td></tr>
+<tr><td> 2</td> <td>22, distance = 0</td><td>21, distance = 1</td><td> longer</td><td>continue</td></tr>
+<tr><td> 3</td> <td>21, distance = 1</td><td>12, distance = 1</td><td> same</td><td>continue</td></tr>
+<tr><td> 4</td> <td>12, distance = 2</td><td>empty</td><td> </td><td>insert & done.</td></tr>
+</table>
+
+![insert 22](/img/robinhood-linear-probing-insert-22.dot.png)
+
+#### insert 27
+
+bucket(27)=7, start from position 7.
+<table>
+<tr><td> position</td> <td>in hand</td><td>in position</td> <td>distance comparison</td><td>action</td></tr>
+<tr><td> 7</td> <td>27, distance = 0</td><td>17, distance = 0</td><td> same</td><td>continue</td></tr>
+<tr><td> 8</td> <td>27, distance = 1</td><td>empty</td><td></td><td>insert & done</td></tr>
+</table>
+
+|position|in hand|
+| -------|--------------|
+|7       |27, distance=0|
+
+
+![insert 27](/img/robinhood-linear-probing-insert-27.dot.png)
+
+#### insert 32
+
+![insert 32](/img/robinhood-linear-probing-insert-32.dot.png)
+
+#### insert 37
+
+![insert 37](/img/robinhood-linear-probing-insert-37.dot.png)
+
+#### insert 47
+
+![insert 47](/img/robinhood-linear-probing-insert-47.dot.png)
+
 
 
 
