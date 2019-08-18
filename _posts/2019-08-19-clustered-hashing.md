@@ -61,7 +61,7 @@ Sacrifice in insert and remove to the extreme make lookup as fast as O(lgN). To 
 
 For a item with key, we calculate an integer called hash through a hash function H: `hash = H(key)`. We allocate a table with table_size a few times larger than item count. We then map hash to the index of the table called bucket through another map function M: `bucket = M(hash, table_size)`. We then directly store item on position bucket, as shown below:
 
-![hash-table-basic](/img/hash-table-basic.dot.png)
+![hash-table-basic](/img/hashing/basic.dot.png)
 
 To lookup item, we do the same: `hash=H(key), bucket=M(hash, table_size)` table[bucket] is the item. Insert and remove are the same. find the bucket, then put to position or remove from the position (special mark). so,
 
@@ -89,7 +89,7 @@ Pointers seem to be the solution to many problems. Like the binary search tree, 
 `H(key) = key`,  H() is identity function, just for illustration only
 `M(hash,table_size)=hash%table_size`, M is frequently used simple mapping function: mod where `table_size=10`  
 
-![Chained hash table](/img/hash-table-chain.dot.png)
+![Chained hash table](/img/hashing/chain.dot.png)
 
 For example,  
 11: `M(H(11),10) = M(11,10) = 11%10 = 1` and  
@@ -149,7 +149,7 @@ Also noted is that the actual content of the table depends on the order of items
 
 Item 10,11,12,17 are inserted into their buckets respectively. 
 
-![insert 10,11,12,17](/img/open-address-insert-10-11-12-17.dot.png)
+![insert 10,11,12,17](/img/hashing/open-insert-10-11-12-17.dot.png)
 
 ##### insert 21
 
@@ -161,7 +161,7 @@ bucket(21)=1, start from position 1.
 |2       |21, distance = 1|12, distance = 0|continue     |
 |3       |21, distance = 2|empty           |insert & done|
 
-![insert 21](/img/open-address-insert-21.dot.png)
+![insert 21](/img/hashing/open-insert-21.dot.png)
 
 ##### insert 22
 
@@ -173,7 +173,7 @@ bucket(22)=2, start from position 2.
 |3       |22, distance = 1|21, distance = 2|continue     |
 |4       |22, distance = 2|empty           |insert & done|
 
-![insert 22](/img/open-address-insert-22.dot.png)
+![insert 22](/img/hashing/open-insert-22.dot.png)
 
 ##### insert 27
 
@@ -184,7 +184,7 @@ bucket(27)=7, start from position 7.
 |7       |27, distance = 0|17, distance = 0|continue     |
 |8       |27, distance = 1|empty           |insert & done|
 
-![insert 27](/img/open-address-insert-27.dot.png)
+![insert 27](/img/hashing/open-insert-27.dot.png)
 
 ##### insert 32
 
@@ -197,7 +197,7 @@ bucket(32)=2, start from position 2.
 |4       |32, distance = 2|22, distance = 2|continue     |
 |5       |32, distance = 3|empty           |insert & done|
 
-![insert 32](/img/open-address-insert-32.dot.png)
+![insert 32](/img/hashing/open-insert-32.dot.png)
 
 ##### insert 37
 
@@ -209,7 +209,7 @@ bucket(37)=7, start from position 7.
 |8       |37, distance = 1|27, distance = 1|continue     |
 |9       |37, distance = 2|empty           |insert & done|
 
-![insert 37](/img/open-address-insert-37.dot.png)
+![insert 37](/img/hashing/open-insert-37.dot.png)
 
 ##### insert 47
 
@@ -228,7 +228,7 @@ bucket(47)=7, start from position 7.
 |5       |47, distance = 8|32, distance = 3|continue     |
 |6       |47, distance = 9|empty           |insert & done|
 
-![insert 47](/img/open-address-insert-47.dot.png)
+![insert 47](/img/hashing/open-insert-47.dot.png)
 
 ##### lookup
 
@@ -287,7 +287,7 @@ We take the same table size and insert the same items as in previous Open Hashin
 
 Item 10,11,12,17 are inserted into their buckets respectively, which is the same as in Open Address Linear Probing.
 
-![insert 10,11,12,17](/img/open-address-insert-10-11-12-17.dot.png)
+![insert 10,11,12,17](/img/hashing/robinhood-insert-10-11-12-17.dot.png)
 
 ##### insert 21
 
@@ -299,7 +299,7 @@ bucket(21)=1, start from position 1.
 |2       |21, distance = 1|12, distance = 0|shorter                                        |swap         |
 |3       |12, distance = 1|empty           |                                               |insert & done|
 
-![insert 21](/img/robinhood-linear-probing-insert-21.dot.png)
+![insert 21](/img/hashing/robinhood-insert-21.dot.png)
 
 ##### insert 22
 
@@ -312,7 +312,7 @@ bucket(22)=2, start from position 2.
 |4       |12, distance = 2|empty           |                                               |insert & done|
 
 
-![insert 22](/img/robinhood-linear-probing-insert-22.dot.png)
+![insert 22](/img/hashing/robinhood-insert-22.dot.png)
 
 ##### insert 27
 
@@ -324,7 +324,7 @@ bucket(27)=7, start from position 7.
 |8       |27, distance = 1|empty           |                                               |insert & done|
 
 
-![insert 27](/img/robinhood-linear-probing-insert-27.dot.png)
+![insert 27](/img/hashing/robinhood-insert-27.dot.png)
 
 ##### insert 32
 
@@ -337,7 +337,7 @@ bucket(32)=2, start from position 2.
 |4       |32, distance = 2|22,distance=2   |same                                           |continue     |
 |5       |32, distance = 3|empty           |                                               |insert & done|
 
-![insert 32](/img/robinhood-linear-probing-insert-32.dot.png)
+![insert 32](/img/hashing/robinhood-insert-32.dot.png)
 
 ##### insert 37
 
@@ -349,7 +349,7 @@ bucket(37)=7, start from position 7.
 |8       |37, distance = 1|27,distance=1   |same                                           |continue     |
 |9       |37, distance = 2|empty           |                                               |insert & done|
 
-![insert 37](/img/robinhood-linear-probing-insert-37.dot.png)
+![insert 37](/img/hashing/robinhood-insert-37.dot.png)
 
 ##### insert 47
 
@@ -368,7 +368,7 @@ bucket(47)=7, start from position 7.
 |5       |12, distance = 3|32,distance=3   |same                                           |continue     |
 |6       |12, distance = 4|empty           |                                               |insert & done|
 
-![insert 47](/img/robinhood-linear-probing-insert-47.dot.png)
+![insert 47](/img/hashing/robinhood-insert-47.dot.png)
 
 ##### Robinhood table structures
 
@@ -392,16 +392,16 @@ Since Robinhood Hashing idea applies to all methods of Open Addressing Hashing, 
 Let's take the cluster idea a bit further: We add overflow positions at the end of the table to avoid wrap-arounds. With the condition, we have another invariant: Clusters of bigger buckets always resides after the clusters of smaller buckets. ie. The clusters are in order of buckets. This small variation simplifies a few complex algorithms and paves the way for more complex algorithms on it.
 
 So what's Clustered Hashing? 
-- A Clustered Hashing is an Open Addressing Hashing. It puts items directly in the hash table.
-- It flattens the structure of Chained Hashing into the hash table itself.
+- The flattened version of Chained Hashing.
+- An Open Addressing Hashing. It puts items directly in the table.
+- An Robinhood Hashing. It adjusts existing items while inserting new items.
+- It adjusts other existing items during while deleting items.
 
 Heres the visual comparison of Chained and Clustered Hashing:
 
 |Chained Hashing|Clustered Hashing|
 |---------------|-----------------|
-|![Chained hash table](/img/hash-table-chain.dot.png)||
-
-
+|![Chained](/img/hashing/chain.dot.png)|![Clustered](/img/hashing/cluster.dot.png) |
 
 ## Lessons Learned
 
