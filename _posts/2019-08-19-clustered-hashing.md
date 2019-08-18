@@ -143,7 +143,13 @@ Below is an example of the open addressing hashing table with linear probing of 
 
 Also noted is that the actual content of the table depends on the order of items inserted. Insert the same elements in another order renders a very different picture. 
 
+###### insert
+
+######insert 10,11,12,17
+
 Item 10,11,12,17 are inserted into their buckets respectively. 
+
+![insert 10,11,12,17](/img/open-address-insert-10-11-12-17.dot.png)
 
 ##### insert 21
 
@@ -224,7 +230,20 @@ bucket(47)=7, start from position 7.
 
 ![insert 47](/img/open-address-insert-47.dot.png)
 
-To show how each item ends up, the table does not resize up (load factor=1) on purpose. When load factor < 1, the longest distance, table_size, will not be reached. However, as you can see, the distance grows dramatically when the table is getting pretty full. In the extremely case, lookup of item 47 has the worst performance of O(N).
+##### lookup
+
+Lookup starts with bucket and ends on the item found, an empty item, or loop through the whole table (reach table_size after wraparound). 
+
+lookup performance is highly deteriorated by too many tombstones.
+
+##### remove
+
+The removed items has to be marked by tombstone in order not to stop lookup prematurely. If the removed item becomes empty item, the lookup stops and may not find some items inserted after the removed items.
+
+The tomstoned item is treated the same as empty item during insertion.
+The tomstoned item is treated as a no-match item during lookup.
+
+To show how each item ends up, the table does not resize up (load factor=1) on purpose. When load factor < 1, the longest distance, table_size, will likely not be reached. However, as you can see, the distance grows dramatically when the table is getting pretty full. In the extremely case, lookup of item 47 has the worst performance of O(N).
 
 However, on the other hand, the memory is most efficiently used.
 
@@ -263,11 +282,12 @@ Robinhood Hashing can be applied to any open addressing hash item idea. Let's in
 We take the same table size and insert the same items as in previous Open Hashing table: insert 10,11,12,17,21,22,27,32,37,47 to hash table of size 10.
 
 #### insert
+
 ##### insert 10,11,12,17
 
 Item 10,11,12,17 are inserted into their buckets respectively, which is the same as in Open Address Linear Probing.
 
-![insert 10,11,12,17](/img/robinhood-linear-probing-insert-10-11-12-17.dot.png)
+![insert 10,11,12,17](/img/open-address-insert-10-11-12-17.dot.png)
 
 ##### insert 21
 
@@ -350,10 +370,36 @@ bucket(47)=7, start from position 7.
 
 ![insert 47](/img/robinhood-linear-probing-insert-47.dot.png)
 
+##### Robinhood table structures
+
+If you look at the structure of items in Robinhood table, you can easily spot its characteristics: unlike the normal open address table, items of the same bucket are clustered together in Robinhood table. 
+
 #### remove
 
+##### tombstone.
+One way to remove is like the open address table, to mark it as tombstone. Tombstone makes removal very fast but at an expense of lookup. 
 
-### Clustered Open Addressing Hashing
+However, tombstone has another huge downside in Robinhood hashing. It wastes a lot of space. Because items in Robinhood table cluster together, the tombstone within the specific cluster has to be considered the tombstoned item  within that cluster. That means, during insert, only the item belonging to that specific cluster can use this tombstone'd space. And the probability is very small of this reuse case. 
+
+##### shift items up.
+
+When an item is removed, we shift the items behind this newly emptied position up by one, if the shift reduces distance of the item, until it reaches another empty position (an empty position's distance cannot be reduced.). This is suggested by Sebastian Sylvan in [More on Robin Hood Hashing](https://www.sebastiansylvan.com/post/more-on-robin-hood-hashing-2/)
+
+### Clustered Hashing
+
+Since Robinhood Hashing idea applies to all methods of Open Addressing Hashing, the special clustered property when it applies to Open Addressing Linear Probing is rarely explored explicitly. Even Sebastian Sylvan never mentioned it.  If we take the cluster property out of the context of Robinhood Hashing and develop on it, We will see that all of sudden it addresses the second uncertainty of Open Addressing Hashing: It now has an simple invariant: All items of the same bucket clustered.
+
+Let's take the cluster idea a bit further: We add overflow positions at the end of the table to avoid wrap-arounds. With the condition, we have another invariant: Clusters of bigger buckets always resides after the clusters of smaller buckets. ie. The clusters are in order of buckets. This small variation simplifies a few complex algorithms and paves the way for more complex algorithms on it.
+
+So what's Clustered Hashing? 
+- A Clustered Hashing is an Open Addressing Hashing. It puts items directly in the hash table.
+- It flattens the structure of Chained Hashing into the hash table itself.
+
+Heres the visual comparison of Chained and Clustered Hashing:
+
+|Chained Hashing|Clustered Hashing|
+|---------------|-----------------|
+|![Chained hash table](/img/hash-table-chain.dot.png)||
 
 
 
