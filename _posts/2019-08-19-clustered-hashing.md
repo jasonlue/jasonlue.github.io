@@ -395,13 +395,18 @@ So what's Clustered Hashing?
 - The flattened version of Chained Hashing.
 - An Open Addressing Hashing. It puts items directly in the table.
 - An Robinhood Hashing. It adjusts existing items while inserting new items.
+
+Clustered Hashing also sacrifices constant property during deletion and lookup.
 - It adjusts other existing items during while deleting items.
+- It adjusts existing items during lookup when incremental sizing is implemented.
 
 Heres the visual comparison of Chained and Clustered Hashing:
 
 |Chained Hashing|Clustered Hashing|
 |---------------|-----------------|
 |![Chained](/img/hashing/chain.dot.png)|![Clustered](/img/hashing/cluster.dot.png) |
+
+I'll discuss the details of Clustered Hashing operation in the next post: [Clustered Hashing: Basic Operations](https://jasonlue.github.io/algo/2019/08/27/clustered-hashing-basic-operations.html)
 
 ## Lessons Learned
 
