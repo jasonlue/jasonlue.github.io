@@ -230,6 +230,7 @@ int LookupIndex(Key& key, int* insert_position = NULL)
 ```
 
 ## Insert
+When we insert an item into its cluster, we always append it to the tail of the cluster. So TailOfCluster(b)+1 is the insertion point of item of bucket b. It's also called the end of cluster b.
 
 I1. To insert key K with bucket b. K has to be appended to the tail of the cluster.
 
