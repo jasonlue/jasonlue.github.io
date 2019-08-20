@@ -322,10 +322,10 @@ The simplest case. Their individual buckets are empty.
 
 The process can be described by the following table:
 
-|insert position|in hand|in position|cluster|end of cluster|action
-|---------------|-------|-----------|-------|--------------|
-|*2*            |21     |12         |2      |3             |21<->12
-|3              |12     |-          |-      |-             |12->empty position
+|insert position|in hand|in position|cluster|end of cluster|action            |
+|---------------|-------|-----------|-------|--------------|------------------|
+|**2**          |21     |12         |2      |3             |21<->12           |
+|3              |12     |-          |-      |-             |12->empty position|
 
 ![insert 21](/img/hashing/cluster-insert-21.dot.png)
 
