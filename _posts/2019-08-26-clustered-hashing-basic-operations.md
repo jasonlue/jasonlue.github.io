@@ -54,12 +54,19 @@ The table has an advertised size of table_size, which is 10 in diagram below for
     internal_table_size = table_size + overflow_size.
     overflow_size = log2(table_size) + C, where C is a constant. 
 
-Properties:
-- Items are arranged in clusters. Items of the same bucket belong to the same cluster. cluster 7 has 4 items 17,27,37,47 all with bucket of 7. 
-- Clusters of items in bucket b is called cluster b. Cluster b is always at or after its perfect position b. For example, cluster 1 starts from postion 1, its bucket. Cluster 2 starts from position 3, after its bucket of 2.
-- The range between position of b and the head of the cluster can't have empty positions. If it had, we could shift cluster b up to reduce the distance of the cluster b.
-- Each item in the cluster maintains the distance from its actual position to its perfect position (bucket). Since clusters reside at or after its perfect position, the distance is always non-negative. Since items of the same cluster are contiguous, the distances are continuous. For exampe, cluster 2 has 3 items. The head of the cluster is 12, with distance of 1. The tail of the cluster is 32, with distance of 3. 
-- Clusters are arranged in the order of its bucket. For example, Cluster 1 is before cluster 2. 
+Basic Properties:
+1. (B1) Items are arranged in clusters. Items of the same bucket belong to the same cluster. cluster 7 has 4 items 17,27,37,47 all of bucket 7. 
+2. (B2) Cluster is located at or after its bucket. Clusters of items in bucket b is called cluster b. For example in the diagram, cluster 1 starts from postion 1, its bucket(1). Cluster 2 starts from position 3, after its bucket(2).
+3. (B3) Clusters are arranged in the order of its bucket. For example, Cluster 1 is before cluster 2. 
+4. (B4) Each cluster is located at its closest possible position to its bucket while maintaining cluster properties 1,2, and 3.
+
+Derived Properties:
+1. (D1) No gaps between bucket of cluster and its head. If it had, we could have shifted the cluster b up to reduce the distance of the cluster b. The shifted arrangement has closer distance from its bucket. This conflicts to Basic Property 4.
+2. (D2) No gaps inside the cluster. If it had, we could have shifted the item of the cluster right after that gap up to improve its distance. This makes the arrangement conflict to Basic property 4.
+3. (D3) Distance maintained in the item is non-negative. Each item in the cluster maintains the distance from its actual position to its perfect position (bucket). Since clusters reside at or after its perfect position, the distance is always non-negative. 
+4. (D4) Distances of items in the same cluster are in continuous ascending order. Since items of the same cluster are contiguous, the distances are continuous. For exampe, cluster 2 has 3 items. The head of the cluster is 12, with distance of 1. It contains 3 items with distances of 1,2, and 3.
+
+The operations are all based on these 4 basic and 4 derived properties.
 
 ![Clustered](/img/hashing/cluster.dot.png)
 
@@ -103,23 +110,22 @@ class Dictionary
 
 ## Lookup
 
-### Find the head and tail of the cluster of bucket b 
+### Find the head and tail of the cluster b 
 
-Based on the properties of Clustered Hashing:
-- Clusters are in the order of buckets 
-- Cluster of bucket starts on or after the bucket.
-
-we know 
-- The search range starts from bucket of the cluster.
-- From this search range we may first see part of full clusters smaller than b.
-- we then may see the cluster of b.
-- we then may see the cluster greater than b.
+- Based on B2, we know the head of cluster is at or after b. So the search range starts from b.
+- Based on B3, From b on 
+    - we may first see partial or full of a cluster smaller than b0.
+    - We then may see other full clusters b1, b2, ..., b-1.
+    - we then may see the cluster of b.
+    - no gaps between b and the tail of cluster b.
+    - we then may see other full clusters b+1, b+2, ...
 
 Solution: 
-- The first position we encouter which has bucket of b is the head of the cluster b.
-- The last position we encounter which has bucket of b is the tail of the custer b.
+1. From b on, the first position with bucket of b is the head of the cluster b if it exists. 
+2. From b on, the last position with bucket of b is the tail of the cluster b if it exists. 
+3. When we reach cluster c > b (B3), or an empty position(D1&D2), or the end of the table. We know cluster b doesn't exist.
 
-For example, head of cluster 2 is 3, the first position at or after 2 whose bucket is 2. tail of cluster 2 is 5, the last position whose bucket is 2. When we insert an item into its cluster, we always append it to the tail of the cluster. So TailOfCluster(b)+1 is the insertion point of item of bucket b. It's also called the end of cluster b.
+For example, head of cluster 2 is 3, the first position at or after 2 whose bucket is 2. The tail of cluster 2 is 5, the last position whose bucket is 2. 
 
 If we don't find positions of bucket b before we reach the end of table, find empty space or the cluster greater than b, we know cluster b doesn't exist.
 
@@ -143,19 +149,19 @@ int TailOfCluster(int bucket)
 { 
     ASSERT(bucket>=0 && bucket < Buckets());
     int i = bucket;
-    if( table[i].Empty() )
+    if( table[i].Empty() || Bucket(i) > bucket)
         return -1; //no such cluster.
-    while(i<Capacity() && !table[i].Empty() && Bucket(i) <= bucket)
+    while( i+1<Capacity() && !table[i+1].Empty() && Bucket(i+1) <= bucket)
         i++;//stop at the next larger bucket.
-    if( Bucket(i-1) == bucket )
-        return i-1;
+    if( Bucket(i) == bucket )
+        return i;
     return -1;
 } 
 ```
 
 ### Find the Head and Tail of the cluster position p belongs to.
 
-This is straight-forward. As we know items of the cluster stay together, we only need to look up and down. The farest position up with the same bucket of position is the head of my cluster and the farest position down with the same bucket of position is the tail of my cluster.
+This is straight-forward. As we know items of the cluster stay together, we only need to look up and down. The farthest position up with the same bucket of position is the head of my cluster and the farest position down with the same bucket of position is the tail of my cluster.
 
 ```c++
 int HeadOfMyCluster(int position)
@@ -221,6 +227,7 @@ int LookupIndex(Key& key, int* insert_position = NULL)
 ```
 
 ## Insert
+When we insert an item into its cluster, we always append it to the tail of the cluster. So TailOfCluster(b)+1 is the insertion point of item of bucket b. It's also called the end of cluster b.
 
 We lookup first. If key is already in the table, we update the value. If it's not, the end (tail of cluster + 1) of the cluster b is the insert position p of key.
 
