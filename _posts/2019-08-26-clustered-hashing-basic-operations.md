@@ -55,16 +55,16 @@ The table has an advertised size of table_size, which is 10 in diagram below for
     overflow_size = log2(table_size) + C, where C is a constant. 
 
 Basic Properties:
-1. (B1) Items are arranged in clusters. Items of the same bucket belong to the same cluster. cluster 7 has 4 items 17,27,37,47 all of bucket 7. 
-2. (B2) Cluster is located at or after its bucket. Clusters of items in bucket b is called cluster b. For example in the diagram, cluster 1 starts from postion 1, its bucket(1). Cluster 2 starts from position 3, after its bucket(2).
-3. (B3) Clusters are arranged in the order of its bucket. For example, Cluster 1 is before cluster 2. 
-4. (B4) Each cluster is located at its closest possible position to its bucket while maintaining cluster properties 1,2, and 3.
+1. (B1-Cluster) Items are arranged in clusters. Items of the same bucket belong to the same cluster. cluster 7 has 4 items 17,27,37,47 all of bucket 7. 
+2. (B2-Bucket) Cluster is located at or after its bucket. Clusters of items in bucket b is called cluster b. For example in the diagram, cluster 1 starts from postion 1, its bucket(1). Cluster 2 starts from position 3, after its bucket(2).
+3. (B3-Order) Clusters are arranged in the order of its bucket. For example, Cluster 1 is before cluster 2. 
+4. (B4-Position) Each cluster is located at its closest possible position to its bucket while maintaining cluster properties 1,2, and 3.
 
 Derived Properties:
-1. (D1) No gaps between bucket of cluster and its head. If it had, we could have shifted the cluster b up to reduce the distance of the cluster b. The shifted arrangement has closer distance from its bucket. This conflicts to Basic Property 4.
-2. (D2) No gaps inside the cluster. If it had, we could have shifted the item of the cluster right after that gap up to improve its distance. This makes the arrangement conflict to Basic property 4.
-3. (D3) Distance maintained in the item is non-negative. Each item in the cluster maintains the distance from its actual position to its perfect position (bucket). Since clusters reside at or after its perfect position, the distance is always non-negative. 
-4. (D4) Distances of items in the same cluster are in continuous ascending order. Since items of the same cluster are contiguous, the distances are continuous. For exampe, cluster 2 has 3 items. The head of the cluster is 12, with distance of 1. It contains 3 items with distances of 1,2, and 3.
+1. (D1 - No gap before) No gaps between bucket of cluster and its head. If it had, we could have shifted the cluster b up to reduce the distance of the cluster b. The shifted arrangement has closer distance from its bucket. This conflicts to Basic Property 4.
+2. (D2 - No gap inside) No gaps inside the cluster. If it had, we could have shifted the item of the cluster right after that gap up to improve its distance. This makes the arrangement conflict to Basic property 4.
+3. (D3 - non-negative position) Distance maintained in the item is non-negative. Each item in the cluster maintains the distance from its actual position to its perfect position (bucket). Since clusters reside at or after its perfect position, the distance is always non-negative. 
+4. (D4-Continuous Distance) Distances of items in the same cluster are in continuous ascending order. Since items of the same cluster are contiguous, the distances are continuous. For exampe, cluster 2 has 3 items. The head of the cluster is 12, with distance of 1. It contains 3 items with distances of 1,2, and 3.
 
 The operations are all based on these 4 basic and 4 derived properties.
 
@@ -230,33 +230,36 @@ int LookupIndex(Key& key, int* insert_position = NULL)
 ```
 
 ## Insert
-When we insert an item into its cluster, we always append it to the tail of the cluster. So TailOfCluster(b)+1 is the insertion point of item of bucket b. It's also called the end of cluster b.
 
 I1. To insert key K with bucket b. K has to be appended to the tail of the cluster.
 
 Proof:
-- B4 tells us all items are in their best possible positions whiling maintaining the properties of the Clustered Hashing. So before the head of the cluster b there is no position for key to insert. Had there been, head of the cluster b is not the best position. So the position to insert key is at or after the head of cluster b.
+
+- B4 tells us all items are in their closest possible positions while maintaining the properties of the Clustered Hashing. So before the head of the cluster b there is no position for key of cluster b to insert. Had there been, head of the cluster b is not best positioned. So the position to insert key is at or after the head of cluster b.
 - D2 tells us there are no gaps inside cluster b. So we cannot put k into a gap inside the cluster.
 - So to put k in any position inside the cluster, we have to swap out the item in that position. 
-- B4 tells us all items are already in their best position. If we put key in and take out the item in that position, we face the same problem to insert the item in hand of the same cluster as the original key without improve any distances of the cluster. So it's waste of time.
+- B4 tells us all items are already in their best position. If we put key in and take out the item in that position, we face the same problem to insert the item in hand of the same cluster as the original key without achieving anything.
 - B1 tells us items of the same cluster are together. If we can't put the key before the head of the cluster, nor do we want to put it inside the cluster, the only option left is to put it at the end of the cluster, after tail of the cluster.
 
 I2. To swap the item, we take out the head of the next cluster and append it to the tail of the same cluster.
 
 Proof:
+
 - When we insert an item, we append to the end of the cluster.
-- B1 tells us items of the same bucket cluster together. If the end of the cluster b is the middle of the next cluster c, that means insertion of the item causes some items of cluster c before it. Now cluster b is mixed with the item of cluster c. This contradicts with B1. So the append position is the head of the next 
+- B1 tells us items of the same bucket cluster together. If the end of the cluster b is the middle of the next cluster c, that means insertion of the item causes some items of cluster c before it. Now cluster b is mixed with the item of cluster c. This contradicts with B1. So the append position is the head of the next cluster.
 
 I1 and I2 forms the algorithm of insertion.
 
-We lookup first. If key is already in the table, we update the value. 
-If it's not, the end (tail of cluster + 1) of the cluster b is the insert position p of key.
+We lookup first. If key is already in the table, we update the value.
 
-If p is empty, we insert to that position p and done. 
+If it's not, we find the insert position p:
 
-If there's already an item in p, we take it out and put key in. We then insert the taken-out item to the end of its cluster and adjust its distance. It triggers chain effect and ends on the first condition. The worst case is the position reaches to the end of the table and there's no place to insert the item. This is when we size up the table and insert the item again.
-
-Append to the end of its cluster. Swap out the item in that position if not empty. Continue until all items are adjusted.
+- If cluster b exists, p = the end (tail of cluster + 1) of the cluster b.
+- If clustere b doesn't exist, p = the end of the cluster just smaller than b (So insertion of key starts the cluster of b).
+- If p is empty, we insert to that position p and done.
+- If p is not emepty, it must be the head of next the cluster. we swap it with item in hand and append it to the end of its cluster.
+- The process goes on until an empty position so no item is in hand after insertion.
+- Adjust distances of the item in hand accordingly.
 
 ```c++
 void  Insert(Key& key, Value& value){
@@ -285,10 +288,10 @@ void Insert(Entry entry, int position)
         {   //the condition to end the loop.
             table[position] = entry;
             return;
-        }        
-        //position is always head of the cluster.
+        }
+        //position is always head of the next cluster.
         ASSERT( position == HeadOfMyCluster(position) );
-        //the to-be-swapped-out item appends to the end of its cluster.
+        //the to-be-swapped-out item appends to the end of its original cluster.
         auto t = table[position];
         int next = TailOfMyCluster(position)+1;
         t.distance += next - position;
@@ -298,26 +301,33 @@ void Insert(Entry entry, int position)
         //need to increase distance along the way.
         //move the head of my cluster to the end of my cluster.
         position = next; //append to the end of the current cluster.
-    } 
+    }
 }
 
 ```
 
+The following examples to insert items one by one from empty table with table_size = 10 and capacity = 14.
+
 ### insert 10,11,12,17
 
-The simplest case. All are inserted to their bucket position respectively without adjustment of other elements.
+The simplest case. Their individual buckets are empty. 
 
 ![insert 10,11,12,17](/img/hashing/cluster-insert-10-11-12-17.dot.png)
 
 ### insert 21
 
-21 belongs to cluster 1. Cluster 1 has only one item (11). Head and tail of Cluster 1 is 1. 21 is appened to the end of cluster 1, which is at position 2.
-12 is currently in position 2. So we take out item 12 and put 21 in.
-12 is append to the end of cluster 2, which is at the position 3 before being taken out.
-position 3 is empty. Adjustment ends.
+- 21 belongs to cluster 1. Cluster 1 has only one item (11). Head and tail of Cluster 1 is 1. end of clustere 1 is position 2.
+- In position 2 is 12, the head of cluster 2. end of cluster 2 is position 3. we swap 12 with 21 in hand.
+- position 3 is empty. Adjustment ends.
+
+The process can be described by the following table:
+
+|insert position|in hand|in position|cluster|end of cluster|action
+|---------------|-------|-----------|-------|--------------|
+|*2*            |21     |12         |2      |3             |21<->12
+|3              |12     |-          |-      |-             |12->empty position
 
 ![insert 21](/img/hashing/cluster-insert-21.dot.png)
-
 
 ### insert 27
 
