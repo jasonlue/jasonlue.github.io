@@ -458,12 +458,12 @@ void Remove(int position)
 
 22 at position 4
 
-![remove 32](/img/hashing/cluster-remove-22.dot.png)
-
 |empty position|position+1|cluster @p+1|tail of cluster|action|
 |--------------|----------|------------|---------------|------|
 |**4**         |5         |2           |5              |5->4  |
 |5             |6         |-           |-              |done  |
+
+![remove 32](/img/hashing/cluster-remove-22.dot.png)
 
 ### Remove 12
 
