@@ -322,18 +322,30 @@ The simplest case. Their individual buckets are empty.
 
 The process can be described by the following table:
 
-|insert position|in hand|in position|cluster|end of cluster|action            |
-|---------------|-------|-----------|-------|--------------|------------------|
-|**2**          |21     |12         |2      |3             |21<->12           |
-|3              |12     |-          |-      |-             |12->empty position|
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|21     |**2**          |12         |2      |3             |21<->12           |
+|12     |3              |-          |-      |-             |12->empty position|
 
 ![insert 21](/img/hashing/cluster-insert-21.dot.png)
 
 ### insert 27
 
+27 belongs to cluster 7. end of cluster 7 is position 8. 8 is the first insertion position.
+
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|27     |**8**          |-          |-      |-             |27->empty position|
+
 ![insert 27](/img/hashing/cluster-insert-27.dot.png)
 
 ### insert 32
+
+32 belongs to cluster 2. end of cluster 2 is position 5. 5 is the first insertion position.
+
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|32     |**5**          |-          |-      |-             |32->empty position|
 
 ![insert 32](/img/hashing/cluster-insert-32.dot.png)
 
@@ -341,25 +353,69 @@ The process can be described by the following table:
 
 ![insert 37](/img/hashing/cluster-insert-37.dot.png)
 
+37 belongs to cluster 7. end of cluster 7 is position 9. 9 is the first insertion position.
+
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|37     |**9**          |-          |-      |-             |37->empty position|
+
 ### insert 47
+
+47 belongs to cluster 7. end of cluster 7 is position 10. 10 is the first insertion position.
+
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|47     |**10**         |-          |-      |-             |47->empty position|
 
 ![insert 47](/img/hashing/cluster-insert-47.dot.png)
 
 ### insert 50
 
+50 belongs to cluster 0. end of cluster 0 is position 1. 1 is the first insertion position.
+
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|50     |**1**          |11         |1      |3             |50<->11           |
+|11     |3              |12         |2      |6             |11<->12           |
+|12     |6              |-          |-      |-             |4->empty position |
+
 ![insert 50](/img/hashing/cluster-insert-50.dot.png)
 
 ### insert 61
+
+61 belongs to cluster 1. end of cluster 1 is position 4. 4 is the first insertion position.
+
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|61     |**4**          |22         |2      |7             |61<->22           |
+|22     |7              |17         |7      |11            |22<->17           |
+|17     |11             |-          |-      |-             |17->empty position|
 
 ![insert 61](/img/hashing/cluster-insert-61.dot.png)
 
 ### insert 73
 
-![insert 73](/img/hashing/cluster-insert-73.dot.png)
+73 belongs to cluster 3. cluster 3 doesn't exist. End of cluster 2 (the cluster right before 3) is position 8. 8 is the first insertion position.
 
+|in hand|insert position|in position|cluster|end of cluster|action            |
+|-------|---------------|-----------|-------|--------------|------------------|
+|73     |**8**          |27         |7      |12             |73<->7           |
+|7      |12             |-          |-      |-              |7->empty position|
+
+![insert 73](/img/hashing/cluster-insert-73.dot.png)
 
 ## Remove
 
+R1: D1 states no gaps exist inside the cluster. If the item at position p is inside the cluster, removal causes gap inside the cluster. we need to reduce this gap. To reduce the gap, we relocate the tail of the cluster to the position p.
+
+R2: D2 states no gaps exist between bucket b and the head of cluster b. A gap at position p between cluster a and b needs to be reduced if it sits between b and head of cluster b. To reduce it, we move the tail of cluster b to position p. Position p becomes the new head of cluster b.
+
+R1 and R2 forms the algorithm of removal:
+
+1. Lookup the key, if position p is not found, it returns. Otherise empty position p.
+2. If the p is the end of the table, or p+1 is also empty or the head of the next cluster b is at its bucket (distance=0). Done.
+3. Find the tail of cluster b to fill position p.
+4. Repeat 2 to fill new empty position at the previous tail of cluster b.
 
 ```c++
 void Remove(Key& key)
@@ -388,7 +444,72 @@ void Remove(int position)
 }
 ```
 
+### Remove 32
 
+32 at position 5
 
-## References
+|empty position|position+1|cluster @p+1|tail of cluster|action|
+|--------------|----------|------------|---------------|------|
+|**5**         |6         |-           |-              |done  |
+
+![remove 32](/img/hashing/cluster-remove-32.dot.png)
+
+### Remove 22
+
+22 at position 4
+
+![remove 32](/img/hashing/cluster-remove-22.dot.png)
+
+|empty position|position+1|cluster @p+1|tail of cluster|action|
+|--------------|----------|------------|---------------|------|
+|**4**         |5         |2           |5              |5->4  |
+|5             |6         |-           |-              |done  |
+
+### Remove 12
+
+12 at position 3
+
+|empty position|position+1|cluster @p+1|tail of cluster|action|
+|--------------|----------|------------|---------------|------|
+|**3**         |4         |2           |5              |5->3  |
+|5             |6         |-           |-              |done  |
+
+![remove 32](/img/hashing/cluster-remove-12.dot.png)
+
+### Remove 21
+
+21 at position 2
+
+|empty position|position+1|cluster @p+1|tail of cluster|action|
+|--------------|----------|------------|---------------|------|
+|**2**         |3         |2           |5              |5->2  |
+|5             |6         |-           |-              |done  |
+
+![remove 21](/img/hashing/cluster-remove-21.dot.png)
+
+### Remove 11
+
+11 at position 1
+
+|empty position|position+1|cluster @p+1|tail of cluster|action|
+|--------------|----------|------------|---------------|------|
+|**1**         |2         |1           |2              |2->1  |
+|2             |3         |2           |5              |5->2  |
+|5             |6         |-           |-              |done  |
+
+![remove 11](/img/hashing/cluster-remove-11.dot.png)
+
+### Remove 10
+
+10 at position 0
+cluster 1 is alreadly optimally located.
+
+|empty position|position+1|cluster @p+1|distance|tail|action|
+|--------------|----------|------------|--------|----|------|
+|**0**         |1         |1           |0       |-   |done  |
+
+![remove 10](/img/hashing/cluster-remove-10.dot.png)
+
+### References
+
 Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
