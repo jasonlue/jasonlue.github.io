@@ -83,6 +83,7 @@ Fibonacci Hashing is a map function from hash to a range of (0, table_size). It 
 2^64/phi = 11400714819323198485
 
 
+
 ## References
 
 [Malte Skarupke, Fibonacci Hashing: The Optimization that the WOrld Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)
