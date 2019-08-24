@@ -15,6 +15,8 @@ Heres the visual comparison of Chained and Clustered Hashing:
 |---------------|-----------------|
 |![Chained](/img/hashing/chain.dot.png)|![Clustered](/img/hashing/cluster.dot.png) |
 
+The reasoning that leads to this data structure are here: [Clustered Hashing](https://jasonlue.github.io/algo/2019/08/27/clustered-hashing.html)
+
 ## Item/Entry Attributes
 
 Each entry in the table has 3 attributes:
@@ -510,6 +512,14 @@ cluster 1 is alreadly optimally located.
 
 ![remove 10](/img/hashing/cluster-remove-10.dot.png)
 
+
+##
+
+This post covers the basic operations on the clustered hashing table. This is enough for most of the use cases. However, in some real time systems, we need to spread out the time spent to resize the table. The next post [Clustered Hashing: Incremental Resizing]({%_posts/2019-08-09-02-clustered-hashing-incremental-resize.md %}) focuses on this specific problem. As it turns out, Clustered Hashing has a neat solution to the incremental resizing problem. 
+
 ### References
 
-Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
+- [Clustered Hashing]({%_posts/2019-08-19-clustered-hashing.md %})
+- [Clustered Hashing Incremental Resize]({%_posts/2019-09-02-clustered-hashing-incremental-resize.md %})
+- [Clustered Hashing Modify On Iteration]({%_posts/2019-09-09-clustered-hashing-modify-on-iteration.md %})
+- Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)

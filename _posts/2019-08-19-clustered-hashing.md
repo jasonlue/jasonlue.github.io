@@ -125,6 +125,20 @@ So what's the reasonable next step? Well, Obviously, While maintainng the  perfo
 
 Withoug chaining conflicts together, the only other option is to find another bucket. The process of finding another empty spot is called probing. To insert an item while its bucket is taken, there are two ways.
 
+#### Appy a step parameter on hash function
+
+We can also apply a step parameter directly on hash function H:
+
+    hash = H'(key,i)
+
+where i starts from 0 forward. So
+
+then expected position (bucket) = M(H'(key,i), table_size)
+
+It rehashes until an empty position is found. There is no upbound of i in this case.
+
+![rehash](/img/hashing/rehash.dot.png)
+
 #### Apply a step parameter on Mapping function M
 
 One way is to add a step parameter in mapping function.
@@ -132,6 +146,8 @@ One way is to add a step parameter in mapping function.
     `M'(hash, table_size, i) = M(M(hash,table_size) + F(i), table_size)
 
 where i starts from 0 forward. Keep increasing i until finds empty spot. A typical example of this type is linear probing.
+
+![remap](/img/hashing/remap.dot.png)
 
 ##### Linear Probing
 
@@ -246,16 +262,6 @@ The tomstoned item is treated as a no-match item during lookup.
 To show how each item ends up, the table does not resize up (load factor=1) on purpose. When load factor < 1, the longest distance, table_size, will likely not be reached. However, as you can see, the distance grows dramatically when the table is getting pretty full. In the extremely case, lookup of item 47 has the worst performance of O(N).
 
 However, on the other hand, the memory is most efficiently used.
-
-#### Appy a step parameter on hash function
-
-We can also apply a step parameter directly on hash function H:
-
-    hash=H'(key,i)
-
-where i starts from 0 forward. So
-
-It rehashes until an empty position is found. There is no upbound of i in this case.
 
 #### Uncertainties
 
@@ -406,7 +412,7 @@ Heres the visual comparison of Chained and Clustered Hashing:
 |---------------|-----------------|
 |![Chained](/img/hashing/chain.dot.png)|![Clustered](/img/hashing/cluster.dot.png) |
 
-I'll discuss the details of Clustered Hashing operation in the next post: [Clustered Hashing: Basic Operations](https://jasonlue.github.io/algo/2019/08/27/clustered-hashing-basic-operations.html)
+I'll discuss the details of Clustered Hashing operation in the next post: [Clustered Hashing: Basic Operations]({% link _posts/2019-08-26-clustered-hashing-basic-operations.md %})
 
 ## Lessons Learned
 
