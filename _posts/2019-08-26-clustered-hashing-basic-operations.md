@@ -515,13 +515,9 @@ cluster 1 is alreadly optimally located.
 
 ##
 
-This post covers the basic operations on the clustered hashing table. This is enough for most of the use cases. However, in some real time systems, we need to spread out the time spent to resize the table. The next post [Clustered Hashing: Incremental Resizing]({% link _posts/2019-08-09-02-clustered-hashing-incremental-resize.md %}) focuses on this specific problem. As it turns out, Clustered Hashing has a neat solution to the incremental resizing problem. 
+This post covers the basic operations on the clustered hashing table. This is enough for most of the use cases. However, in some real time systems, we need to spread out the time spent to resize the table. The next post focuses on this specific problem. As it turns out, Clustered Hashing has a neat solution to the incremental resizing problem. 
 
 ### References
 
-- [Clustered Hashing]({% link _posts/2019-08-19-clustered-hashing.md %})
-- [Clustered Hashing]({% link _posts/2019-08-26-clustered-hashing-basic-operations.md %})
-- [Clustered Hashing Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %})
-- [Clustered Hashing Modify On Iteration]({% link _posts/2019-09-09-clustered-hashing-modify-on-iteration.md %})
 - Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
 - [Malte Skarupke, Fibonacci Hashing: The Optimization that the WOrld Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)
