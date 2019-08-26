@@ -48,9 +48,11 @@ We could record it somewhere, but then we need to map the key to it. This still 
 
 ![hash-table-basic](/img/hashing/cluster-remap.dot.png)
 
-Actually, we can be smarter than trying all sizes out. Because we know that mix of items only happen during remapping process (to map old items to new table sizes). We clear the table size queue when we finish remapping. The table size queue only contains just a few, most of time only one, sizes when remapping is not fast enough to complete. So the lookup of old items and not existing items takes at most sizeof(queue) tries if the usual lookup doesn't find the item. 
+Actually, we can be smarter than trying all sizes out. Because we know that mix of items only happens during remapping process (to map old items to new table sizes). We clear the table size queue when we finish remapping. The table size queue only contains just a few, most of time only one, sizes when remapping is not fast enough to complete. So the lookup of old items and non-existing items takes at most sizeof(queue) tries if the usual lookup doesn't find the item. 
 
-We can even do better than that with regards to old items if we are willing to break an implicit rule during hash table lookup. When we look up an item in the hash table, we assumes that lookup doesn't modify the table. 
+If we only grow the table, We only need to record the start of queue because we can infer all the sizes thereafter. 
+
+We can even do better than that with regards to old items if we are willing to break an implicit rule during hash table lookup. When we look up an item in the hash table, we assume that lookup doesn't modify the table. 
 
 From simple Open Addressing Hashing to Clustered Hashing, we've broken a few rules to boot the performance:
 
