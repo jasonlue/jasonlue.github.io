@@ -9,12 +9,45 @@ Iteration on the hash table is usually a constant operation. It doesn't modify t
 
 ## Iteration
 
+To keep track of the state of each iteration, we maintain an iterator:
+
+```c++
+struct IterCookie
+{
+    Dictionary* d;
+    int next; //track the position to be iterated next.
+    vector<Dictionary::Entry> inserted; //items inserted before next iteration point.
+    vector<Dictionoary::visited;//items at or after next but is already visited.
+}
+
+
+Value NextEntry(Key& k, IterCookie& it)
+{
+    if(!it.inserted.empty())
+    {
+        Value v = it.inserted.back().value;
+        k = it.inserted.back().key;
+        it.inserted.pop_back();
+        return v;
+    }
+    
+}
+```
+
+
+## insert on iteration
+
+Inserting an item into position p, based on insert algorithm, it adjust the items in range [p,q]. There is an iteration in progress. The next iteration position is store in the iteration cookie c: c->next.
+
+
+
+## remove on iteration
+
 
 
 ## lookup on iteration
-## insert on iteration
-## remove on iteration
 
+## Remap on iteration
 
 ## References
 
