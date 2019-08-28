@@ -83,7 +83,6 @@ class Dictionary
 
         uint32 hash;
         short distance;
-        short log2_buckets;//the size of table this entry belongs to.
 
         bool Empty(){return distance < 0;}
         void SetEmpty() {distance = -1;}
@@ -278,17 +277,29 @@ void  Insert(Key& key, Value& value){
 }
 
 void Insert(Entry entry, int position)
-{//insert entry into position. 
+{
+    int last_affected_position = position;
+    Insert(entry, position, last_affected_position);
+}
+
+///insert entry into position. distance in entry is set correctly before the call.
+void Insert(Entry entry, int position, int& last_affected_position)
+{
+    ///take out the head of cluster and append to the end of the cluster.
     while(true)
-    {   //take out the head of cluster and append to the end of the cluster.
+    {   
         if(position >= Capacity())
         {
-            SizeUp(); //copied all the items to new table.
-            Insert(entry.key, entry.value);
+            ASSERT(position == Capacity());
+            SizeUp(); //copied all the items to new table. as it's just copying without remapping, position is now empty.
+            table[position] = entry;
+            last_affected_position = position;
+            return;
         }
         if(table[position].Empty())
         {   //the condition to end the loop.
             table[position] = entry;
+            last_affected_position = position;
             return;
         }
         //position is always head of the next cluster.
@@ -419,6 +430,8 @@ R1 and R2 forms the algorithm of removal:
 3. Find the tail of cluster b to fill position p.
 4. Repeat 2 to fill new empty position at the previous tail of cluster b.
 
+To fill the position p vacated by Remove(), the tail of cluster at p+1 is used. To fill the rest, the tail of the cluster is removed to become the head of the same cluster.
+
 ```c++
 void Remove(Key& key)
 {
@@ -429,13 +442,20 @@ void Remove(Key& key)
     Remove(position);
 }
 
-void Remove(int position)
+Entry Remove(int position)
+{
+    int last_affected_position = position;
+    Entry e = Remove(position, last_affected_position);
+}
+
+Entry Remove(int position, int& last_affected_position)
 {   //fill the empty position with the tail of the cluster of position+1.
     while(true)
     {
         if( position == Capacity() - 1 || table[position+1].Empty() || table[position+1].distance == 0)
         {//no next cluster to fill, or next position is empty or next position is already in perfect bucket.
             table[position].SetEmpty();
+            last_affected_position = position;
             return;
         }
         int next = TailOfMyCluster(position+1);

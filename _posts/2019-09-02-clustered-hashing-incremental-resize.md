@@ -19,18 +19,49 @@ For this reason, an incremental resizing mechanism is designed to only move a sm
 
 The no-pointer property of open table gives Cluster Hashing a really neat way to size up: It can actually size up in place. Because it doesn't require readjustment of pointers, it can reallocate larger size with the existing table as first part of the table. We can easily achieve this with realloc() C function call. It the table has some free memory after it, it simply extends the memory space. If it doesn't, relalloc() allocates a larger memory and copy the existing table to the new memory as the first part. This should be a very fast operation.
 
+
+
 ![Sizeup](/img/hashing/cluster-sizeup.dot.png)
 
 ## Remap
 
 After table sizes up, all items become old and need to be relocated to positions based on new table_size. To remove the item from the table and then insert it back again is called remapping. We know that from position 0 to previous table_size are old items right after resize. We mark this as remap range [0,remap_end]. New inserts may happen in this range or after it, ie. in  range (remap_end, table_size). We know that range (remap_end, table_size) contains only items mapping to the new table size. Range [0,remap_end] contains both old and new items.
 
-We remap the items from bottom of the remap range until the top. As incremental resizing indicates, we remap a small set of items for every new inserts. Remap range [0,remap_end] shrinks after each remap.
+We remap the items from bottom of the remap range until the top. As incremental resizing indicates, we remap a small set of items for every new inserts. Remap range [0,remap_end] usually shrinks after each remap. However, Remap may also cause the range to grow due to relocation of the 
 
 How do we know if an item is an old item or not? We need to know that to remap the old item to the new position.
 
 We don't have to know. For each item of key K, we recalculates its bucket based on new table size: 
 ``bucket=M(H(K),table_size)`` and based on its position we can calculate its actual bucket: ``bucket=position-distance``. If two buckets are the same, we don't have to remap it. This is the same for all new items and some old items. In fact, when we design a smart map function, only half of the old items need to be remapped. This is a big boost in performance compared to other incremental resizing mechanisms.
+
+
+```c++
+void Remap()
+{
+    int left = DICT_REMAP_ENTRIES; //max entries to remap at a time.
+    //Remap(remap_end) may change remap_end on return if Remap adjusted items expands remap range.
+    while(remap_end >= 0 && left > 0)
+    {   //< if we actually Remap(remap_end) successfully, remap_end may be changed. check it again.
+        if(!table.Empty(remap_end) && Remap(remap_end))
+            left--;
+        else
+            remap_end--;
+    }
+}
+
+bool Remap(int position)
+{
+    ASSERT(position >= 0 && position < Capacity());
+    int current = Bucket(position);
+    int expected = Bucket(table[position].hash, log2_buckets);
+    if( current == expected)
+        return false;
+    Entry e = Remove(position);
+    e.distance = 0;
+    Insert(e, expected);
+    return true;
+}
+```
 
 In the diagram below, left table shows the state right after the size up. dark grey area is the overflow area. remap_end is set the the last position before table resizes. The old table_size = 10, the new one is 20. During first remapping, we go from bottom (13) up. Position 13,12,11 are empty. No adjustment. Position 10 is 47. new bucket is 47%20=7, the same as before. No change. Position 0 is 37. bucket = 37 % 20 = 17. new bucket is 17 while current bucket is 7. So take 47 out by calling remove(9). Removal of 9 causes position 10 to shift up. So 47 is relocated to position 9. insert(37) put item 37 to bucket 17.
 
