@@ -351,13 +351,13 @@ void  Insert(Key& key, Value& value){
     InsertRelocateAndAdjust(entry, insert_position);
 }
 
-void InsertRelocateAndAdjust(Entry entry, int insert_position)
+void InsertRelocateAndAdjust(Entry& entry, int insert_position)
 {
     int last_affected_position = position;
     InsertAndRelocate(entry, insert_position, &last_affected_position);
 }
 
-void InsertAndRelocate(Entry entry, int position, int* last_affected_position)
+void InsertAndRelocate(Entry& entry, int position, int* last_affected_position)
 {
     while(true)
     {
