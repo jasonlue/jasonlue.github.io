@@ -67,6 +67,26 @@ int BucketByKey(Key key, int log2_table_size)
 }
 ```
 
+To keep table simple and avoid table wrap-around, an overflow area is attached to the end of the table. Now the table has an advertised size of table_size, represented by log2_table_size, and an internal table size.
+
+    internal_table_size = table_size + overflow_size.
+    overflow_size = log2(table_size) + C, where C is a constant.
+
+Buckets() returns table size.
+Capacity() returns internal table size
+
+```c++
+int Buckets()
+{ 
+    return 1<<log2_buckets;
+}
+
+int Capacity()
+{ 
+    return (1<<log2_buckets) + log2_buckets;
+}
+```
+
 ## Item/Entry Attributes
 
 Each entry in the table has 3 attributes:
@@ -94,11 +114,6 @@ int BucketByPosition(int position)
 
 ## Structure of the table
 
-The table has an advertised size of table_size, which is 10 in diagram below for easy illustration of hash and bucket calculation. It also has an overflow area after the end of table to accomodate clusters with bucket close to the table size. the overflow size is 4 in the diagram. 
-
-    internal_table_size = table_size + overflow_size.
-    overflow_size = log2(table_size) + C, where C is a constant. 
-
 Basic Properties:
 1. (B1-Cluster) Items are arranged in clusters. Items of the same bucket belong to the same cluster. cluster 7 has 4 items 17,27,37,47 all of bucket 7. 
 2. (B2-Bucket) Cluster is located at or after its bucket. Clusters of items in bucket b is called cluster b. For example in the diagram, cluster 1 starts from postion 1, its bucket(1). Cluster 2 starts from position 3, after its bucket(2).
@@ -118,6 +133,7 @@ The operations are all based on these 4 basic and 4 derived properties.
 The hash is saved with key-value pair in the table entry here. When table size grows, it saves time to recalculate hash and map hash to another range. It also saves time on comparison of keys as it can now compare hash first. Only when hash does match it compares key. If space optimization is more important the extra time savings. We can take hash out.
 
 distance is put as 2-byte unsigned integer directly in the entry. If extra space savings is necessary, we can put distance into a separate array with table array to have one byte distance and can possibly take 2-byte distance when it is necessary. We usually require entries are in multiples of 8 to keep it alligned to perform fast. With Clustered Hashing, distances are evenly distributed and very rarely go over log2(N). A dictionary of 1 million entries usually has distances less than 20.
+
 
 ```c++
 template<class Key, class Value> 
@@ -152,18 +168,20 @@ class Dictionary
 
 ## Lookup
 
-### Find the head and tail of the cluster b 
+### Find the head and tail of the cluster b
 
 - Based on B2-Bucket, we know the head of cluster is at or after b. So the search range starts from b.
-- Based on B3-Order, From b on 
-    - we may first see partial or full of a cluster smaller than b0.
-    - We then may see other full clusters b1, b2, ..., b-1.
-    - we then may see the cluster of b.
-    - no gaps between b and the tail of cluster b.
-    - we then may see other full clusters b+1, b+2, ...
+- Based on B3-Order, From b on
 
-Solution: 
-1. From b on, the first position with bucket of b is the head of the cluster b if it exists. 
+  - we may first see partial or full of a cluster smaller than b0.
+  - We then may see other full clusters b1, b2, ..., b-1.
+  - we then may see the cluster of b.
+  - no gaps between b and the tail of cluster b.
+  - we then may see other full clusters b+1, b+2, ...
+
+Solution:
+
+1. From b on, the first position with bucket of b is the head of the cluster b if it exists.
 2. From b on, the last position with bucket of b is the tail of the cluster b if it exists. 
 3. When we reach next cluster (B3-Order), or an empty position(D1&D2 - No Gap), or the end of the table. We know cluster b doesn't exist.
 
@@ -589,7 +607,7 @@ cluster 1 is alreadly optimally located.
 
 ![remove 10](/img/hashing/cluster-remove-10.dot.png)
 
-This post covers the basic operations on the clustered hashing table. This is enough for most of the use cases. However, in some real time systems, we need to spread out the time spent to resize the table. The next post focuses on this specific problem. As it turns out, Clustered Hashing has a neat solution to the incremental resizing problem. I discusses it in the next post: [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %}).
+This post covers the basic operations on the clustered hashing table: lookup, insert and remove. This is enough for most of the use cases. However, in some real time systems, we need to spread out the time spent to resize the table. The next post focuses on this specific problem. As it turns out, Clustered Hashing has a neat solution to the incremental resizing problem. I discusses it in the next post: [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %}).
 
 ## References
 
