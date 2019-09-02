@@ -345,14 +345,17 @@ The item is the head of the cluster right befor `next`, but cannot be smaller th
 So the item is at the position `max(position,HeadOfMyCluster(next-1))` because next is in range [p+1,q], next-1 is always valid.
 
 ```c++
-void AdjustOnRemove(IterCookie& c, Entry& entry, int position, int& last_adjusted_position)
+void AdjustOnRemove(IterCookie* c, const Entry& entry, int position, int last_adjusted_position)
 {
-    c.inserted.erase(remove(c.inserted.begin(), c.inserted.end(), entry), c.inserted.end());
-    if (position < c.next && c.next <= last_adjusted_position)
+    c->inserted.erase(remove(c->inserted.begin(), c->inserted.end(), entry), c->inserted.end());
+    if (position < c->next && c->next <= last_adjusted_position)
     {
-        int crossing = max(position, HeadOfMyCluster(c.next-1));
-        c.inserted.push_back(table[crossing]);
+        int crossing = max(position, HeadOfMyCluster(c->next-1));
+        c->inserted.push_back(table[crossing]);
     }
+    //c->next could be empty. adjust if it is.
+    if(c->next < Capacity() && table[c->next].Empty())
+        c->next = Next(c->next);
 }
 ```
 
@@ -387,7 +390,7 @@ Adjusting iteration cookies during insert and remove is expensive. When iteratio
 
 ## Remap on iteration
     Avoid Remap when iteration is in progress.
-    
+
 ## References
 
 - [Clustered Hashing]({% link _posts/2019-08-19-clustered-hashing.md %})

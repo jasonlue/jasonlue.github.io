@@ -15,7 +15,57 @@ Heres the visual comparison of Chained and Clustered Hashing:
 |---------------|-----------------|
 |![Chained](/img/hashing/chain.dot.png)|![Clustered](/img/hashing/cluster.dot.png) |
 
-The reasoning that leads to this data structure are here: [Clustered Hashing](https://jasonlue.github.io/algo/2019/08/27/clustered-hashing.html)
+The reasoning that leads to this data structure are here: [Clustered Hashing]({% link _posts/2019-08-19-clustered-hashing.md %}).
+
+## Table Size & Map Function: Fibonacci Hashing
+
+Before getting into the details of the Clustered Hashing, let's discuss the table size and mapping mechanism first. Normally each index in hash table is a bucket. Keys are hashed and mapped into [0,table_size) range.
+
+To get the bucket from key, we use
+
+    bucket=M(H(key),table_size)
+
+Map function M usually is a single mod function below:
+
+    M(hash,table_size) = hash % table_size.
+
+There are a few issues with this map function:
+
+- table_size need to be a prime to make it really effective. And the increasingly large primes are hard, and expensive to find. When we compromise with just an odd large integer, the mapping function may perform worse. It results in more collisions.
+- hash % table_size looks very simple, but is expensive to calculate. It uses division, which involves loop.
+- the bucket mapping depends heavily on the hash function. A bad hash function, for example, an integer identity function, may cause a lot of collisions.
+
+
+Fibonacci Hashing is a map function from hash to a range of (0, table_size). It solves all three issues above and add one more benefit in the case of incremental resizing.
+
+- table_size is always 2^N. so table_size is represented by bits N
+- bucket = M(hash,N) = lower N bits of (hash * 2^64 / phi) , phi = Golden Ratio = 1.618033987...
+
+2^64/phi = 11400714819323198485
+
+```c++
+hash_t FibHash(hash_t hash)
+{
+    hash *= 11400714819323198485llu; //2^64/phi
+    return hash;
+}
+
+int BucketByHash(hash_t h, int log2_table_size)
+{
+    if( !log2_table_size )
+        return 0;
+    int m = 64 - log2_table_size;
+    hash_t hash = FibHash(h);
+    hash <<= m;
+    hash >>= m;
+    return hash;
+}
+
+int BucketByKey(Key key, int log2_table_size)
+{
+    return BucketByHash(Hash(key), log2_table_size);
+}
+```
 
 ## Item/Entry Attributes
 
@@ -28,26 +78,19 @@ bucket  |bucket of the item, or the perfect position of the item. <br>`b = M(H(k
 distance|distance of the item's actual position from its bucket. distance >= 0 <br>When the item is in its expected bucket position, the distance = 0. Likely the item is off from its bucket because its bucket positon is occupied by another item. <br>A special distance = -1 is used to identify an empty item.
 
 Items in Clustered Hashing Table satisfies the following equation:
-    
+
     position = bucket + distance
 
 So we only need to maintain a distance attribute for the item and derive bucket from it by
-    
+
     bucket = position - distance
 
 ```c++
-int Bucket(int position)
-{//don't call it on empty items.
-    ASSERT( position >=0 && position <= Capacity() && table[position].distance >= 0);
+int BucketByPosition(int position)
+{
     return position - table[position].distance;
 }
 ```
-
-You can also derive bucket from key and table_size
-
-    bucket = M(H(key),table_size)
-
-but this is expensive to calculate every time. So we only use it when it's first inserted.
 
 ## Structure of the table
 
@@ -72,6 +115,10 @@ The operations are all based on these 4 basic and 4 derived properties.
 
 ![Clustered](/img/hashing/cluster.dot.png)
 
+The hash is saved with key-value pair in the table entry here. When table size grows, it saves time to recalculate hash and map hash to another range. It also saves time on comparison of keys as it can now compare hash first. Only when hash does match it compares key. If space optimization is more important the extra time savings. We can take hash out.
+
+distance is put as 2-byte unsigned integer directly in the entry. If extra space savings is necessary, we can put distance into a separate array with table array to have one byte distance and can possibly take 2-byte distance when it is necessary. We usually require entries are in multiples of 8 to keep it alligned to perform fast. With Clustered Hashing, distances are evenly distributed and very rarely go over log2(N). A dictionary of 1 million entries usually has distances less than 20.
+
 ```c++
 template<class Key, class Value> 
 class Dictionary
@@ -80,29 +127,23 @@ class Dictionary
     {
         Key key;
         Value value;
+        hash_t hash;
+        uint16 distance;
 
-        uint32 hash;
-        short distance;
-
-        bool Empty(){return distance < 0;}
-        void SetEmpty() {distance = -1;}
+        bool Empty(){return distance == 0xFFffFFff;}
+        void SetEmpty() {distance = 0xFFffFFff;}
         bool Equal(const Entry& other){ return hash == other.hash && key == other.key;}
         bool operator==(const Entry& other){ return Equal(other); }
         bool operator!=(const Entry& other){ return !Equal(other); }
-        Entry(Key key, Value& value): key(key),value(value), distance(0), log2_buckets(0){}
+        Entry(Key key, const Value value, uint32 hash, uint16 distance): key(key), value(value), hash(hash), distance(0){}
     };
-    
+
     Entry* table;
     char log2_buckets; //2^log2_buckets is the table_size.
-    int table_size;
-    int internal_table_size;
 
-    uint32 Hash(const Key& key) const;
-    int BucketByHash(uint32 hash) const;
-    int BucketByKey(Key& key) const
-    {
-        return BucketByHash(Hash(key));
-    }
+    hash_t Hash(const Key& key) const;
+    int BucketByHash(uint32 hash, int log2_table_size) const;
+    int BucketByKey(Key key) const;
     int Buckets() { return 1<<log2_buckets;}
     int Capacity() { return (1<<log2_buckets) + log2_buckets;}
 };
@@ -113,8 +154,8 @@ class Dictionary
 
 ### Find the head and tail of the cluster b 
 
-- Based on B2, we know the head of cluster is at or after b. So the search range starts from b.
-- Based on B3, From b on 
+- Based on B2-Bucket, we know the head of cluster is at or after b. So the search range starts from b.
+- Based on B3-Order, From b on 
     - we may first see partial or full of a cluster smaller than b0.
     - We then may see other full clusters b1, b2, ..., b-1.
     - we then may see the cluster of b.
@@ -124,7 +165,7 @@ class Dictionary
 Solution: 
 1. From b on, the first position with bucket of b is the head of the cluster b if it exists. 
 2. From b on, the last position with bucket of b is the tail of the cluster b if it exists. 
-3. When we reach cluster c > b (B3), or an empty position(D1&D2), or the end of the table. We know cluster b doesn't exist.
+3. When we reach next cluster (B3-Order), or an empty position(D1&D2 - No Gap), or the end of the table. We know cluster b doesn't exist.
 
 For example, head of cluster 2 is 3, the first position at or after 2 whose bucket is 2. The tail of cluster 2 is 5, the last position whose bucket is 2. 
 
@@ -135,100 +176,113 @@ For example, when we look for head of cluster 4. Starting from position 4, we fi
 ![Clustered](/img/hashing/cluster.dot.png)
 
 ```c++
-int HeadOfCluster(int bucket)
-{ 
-    ASSERT(bucket>=0 && bucket < Buckets());
+int HeadOfClusterByBucket(int bucket) const
+{
     int i = bucket;
-    while( i < Capacity() && !table[i].Empty() && Bucket(i) < bucket)
-        i++;
-    if( i >= Capacity() || table[i].Empty() || Bucket(i) > bucket)
-        return -1; //no such cluster.
-    return i;
-} 
-
-int TailOfCluster(int bucket)
-{ 
-    ASSERT(bucket>=0 && bucket < Buckets());
-    int i = bucket;
-    if( table[i].Empty() || Bucket(i) > bucket)
-        return -1; //no such cluster.
-    while( i+1<Capacity() && !table[i+1].Empty() && Bucket(i+1) <= bucket)
-        i++;//stop at the next larger bucket.
-    if( Bucket(i) == bucket )
-        return i;
+    for(; i < Capacity() && !table[i].Empty() && BucketByPosition(i) < bucket; i++)
+        if( BucketByPosition(i) == bucket)
+            return i;
     return -1;
-} 
+}
+
+int TailOfClusterByBucket(int bucket) const
+{
+    int end = EndOfClusterByBucket(bucket);
+    if( end - 1 >= 0 && !table[end-1].Empty() && BucketByPosition(end - 1) == bucket )
+        return end - 1;
+    return -1;
+}
+
+int Dictionary::EndOfClusterByBucket(int bucket) const
+{
+    int i = bucket;
+    while( i < Capacity() && !table[i].Empty() && BucketByPosition(i) <= bucket)
+        i++;
+    return i;
+}
+
 ```
 
-### Find the Head and Tail of the cluster position p belongs to.
+### Find the Head, Tail, End and Offset of the cluster position p belongs to
 
 This is straight-forward. As we know items of the cluster stay together, we only need to look up and down. The farthest position up with the same bucket of position is the head of my cluster and the farest position down with the same bucket of position is the tail of my cluster.
 
 ```c++
-int HeadOfMyCluster(int position)
-{ 
-    ASSERT(position >=0 && position < Capacity() && !table[position].Empty() );
+int HeadOfClusterByPosition( int position) const
+{
+    int bucket = BucketByPosition(position);
     int i = position;
-    int bucket = Bucket(i);
-    //[bucket,position] cannot have empty items. or it breaks the invariant.
-    while( i>=bucket && Bucket(i) == bucket)
-        i--;//stops just before head of cluster.
-    return i == bucket ? i : i+1;
-} 
-```
-### When the item at position is part of the cluster, find the Tail of my cluster
+    while( i >= bucket && BucketByPosition(i) == bucket )
+        i--;
+    return i == bucket ? i : i + 1;
+}
 
-```c++
-int TailOfMyCluster(int position)
-{ 
-    ASSERT(position >=0 && position < Capacity() && !table[position].Empty() );
+int TailOfClusterByPosition(int position) const
+{
+    int bucket = BucketByPosition(position);
     int i = position;
-    int bucket = Bucket(i);
-    while( i<Capacity() && Bucket(i) == bucket)
-        i++;//stops just after tail of cluster.
-    return i-1;
-} 
+    while( i < Capacity() && !table[i].Empty() && BucketByPosition(i) == bucket )
+        i++;
+    return i - 1;
+}
+
+int EndOfClusterByPosition(int position) const
+{
+    return TailOfClusterByPosition(position)+1;
+}
+
+int OffsetInClusterByPosition(int position) const
+{
+    int head = HeadOfClusterByPosition(position);
+    return position - head;
+}
 ```
 
 ### Lookup specific key
 
-We find the head of the cluster b first. If it exists, we go through cluster b to look for specific key. If key is equal we have found it. When not found, the position it stops is the insert position had the key been inserted. 
+Because if cluster b exists, from position b to the tail of cluster b, the table items are contiuous without gaps. Starting from b we loop through it until we find a gap(empty position), a larger cluster, or end of table. When cluster is right we compare hash and key to find the match.
 
-For example, Lookup(22). we look continuous from position 2. We compare bucket to locate head of cluster 2, which is position 3. We then going through the cluster 2 and find 32 on position 4.
-
-Lookup(26), we start from position 6. Because position 6 is empty, we know immediately cluster 6 doesn't exist. If we want to insert 26, position 6 is the position to insert.
-
-Lookup(23), we start from position 3. Looking for head of the cluster 3 ends with position 6 as its empty. So we know cluster 3 doesn't exist. If we want to insert 23, position 6 is the position to insert.
+The reason to have one extra wrapper of LookupIndex() is to handle lookup and its optimization during hash table resizing. `nt LookupIndex(Key key, hash_t hash, int* insert_position = NULL, int* insert_distance = NULL)` is extended in the next post.
 
 ```c++
-Value* Lookup(Key& key)
+Value* Lookup(Key key)
 {
-    int position = LookupIndex(key);
-    if( position < 0)
-        return nullptr;
-    return &table[position].value;
+    hash_t hash = Hash(key);
+    int position = LookupIndex(key, hash);
+    return position >= 0 ? &table[position].value : NULL;
 }
 
-int LookupIndex(Key& key, int* insert_position = NULL)
+int LookupIndex(Key key, hash_t hash, int* insert_position = NULL, int* insert_distance = NULL)
 {
-    int bucket = BucketByKey(key);
-    ASSERT(bucket>=0 && bucket < Buckets());
-    //skip items with smaller buckets
-    for(int i = b; i < Capacity() && !table[i].Empty() && Bucket(i) < bucket)
-        i++;
-    if( i >= Capacity() || table[i].Empty() || Bucket(i) != bucket)
-        return -1; //not such cluster exists.
-    //i is head of cluster, going through the cluster.
-    for(; i < Capacity() && !table[i].Empty() && Bucket(i) == bucket){
-        if(table[i].key == key)
+    if( !table )
+        return -1;
+    int bucket = BucketByHash(hash);
+    int end = Capacity();
+    return LookupIndex(key, hash, bucket, end, insert_position, insert_distance);
+}
+
+int LookupIndex(Key key, hash_t hash, int bucket, int end, int* insert_position = NULL, int* insert_distance = NULL)
+{
+    int i = bucket;
+    for(; i < end && !table[i].Empty() && BucketByPosition(i) <= bucket; i++)
+        if( BucketByPosition(i) == bucket && table[i].hash == hash && table[i].key )
             return i;
-    }
     if(insert_position)
         *insert_position = i;
+    if(insert_distance)
+        *insert_distance = i - bucket;
     return -1;
 }
 
 ```
+
+![Clustered](/img/hashing/cluster.dot.png)
+
+For example, Lookup(22). we look continuously from position 2. We compare bucket to locate head of cluster 2, which is position 3. We then going through the cluster 2 and find 32 on position 4.
+
+Lookup(26), we start from position 6. Because position 6 is empty, we know immediately cluster 6 doesn't exist. If we want to insert 26, position 6 is the position to insert.
+
+Lookup(23), we start from position 3. Looking for head of the cluster 3 ends with position 6 as its empty. So we know cluster 3 doesn't exist. If we want to insert 23, position 6 is the position to insert.
 
 ## Insert
 
@@ -262,58 +316,54 @@ If it's not, we find the insert position p:
 - The process goes on until an empty position so no item is in hand after insertion.
 - Adjust distances of the item in hand accordingly.
 
+The core algorithm is implemented in `InserAndRelocate()`. Extra wrappers are used for adjustment during incremental resizing.
+
 ```c++
 void  Insert(Key& key, Value& value){
+    hash_t hash = Hash(key);
     int insert_position = 0;
-    int position = LookupIndex(key, &insert_position);
+    int insert_distance = 0;
+    int position = LookupIndex(key, hash, &insert_position, &insert_distance);
     if( position > 0 )
     {
         table[i].value = value;
         return;
     }
-    Entry entry(key, value);
-    entry.distance = insert_position - BucketByKey(key);
-    return Insert(entry, insert_position);
+    Entry entry(key, value, hash, insert_distance);
+    InsertRelocateAndAdjust(entry, insert_position);
 }
 
-void Insert(Entry entry, int position)
+void InsertRelocateAndAdjust(Entry entry, int insert_position)
 {
     int last_affected_position = position;
-    Insert(entry, position, last_affected_position);
+    InsertAndRelocate(entry, insert_position, &last_affected_position);
 }
 
-///insert entry into position. distance in entry is set correctly before the call.
-void Insert(Entry entry, int position, int& last_affected_position)
+void InsertAndRelocate(Entry entry, int position, int* last_affected_position)
 {
-    ///take out the head of cluster and append to the end of the cluster.
     while(true)
-    {   
-        if(position >= Capacity())
+    {
+        if(insert_position >= Capacity())
         {
-            ASSERT(position == Capacity());
-            SizeUp(); //copied all the items to new table. as it's just copying without remapping, position is now empty.
-            table[position] = entry;
-            last_affected_position = position;
+            SizeUp();
+            table[insert_position] = entry;
+            if(last_affected_position)
+                *last_affected_position = insert_position;
             return;
         }
-        if(table[position].Empty())
-        {   //the condition to end the loop.
-            table[position] = entry;
-            last_affected_position = position;
+        if(table[insert_position].Empty())
+        {
+            table[insert_position] = entry;
+            if(last_affected_position)
+                *last_affected_position = insert_position;
             return;
         }
-        //position is always head of the next cluster.
-        ASSERT( position == HeadOfMyCluster(position) );
-        //the to-be-swapped-out item appends to the end of its original cluster.
-        auto t = table[position];
-        int next = TailOfMyCluster(position)+1;
-        t.distance += next - position;
-        //swap
-        table[position] = entry;
+        auto t = table[insert_position];
+        int next = EndOfClusterByPosition(insert_position);
+        t.distance += next - insert_position;
+        table[insert_position] = entry;
         entry = t;
-        //need to increase distance along the way.
-        //move the head of my cluster to the end of my cluster.
-        position = next; //append to the end of the current cluster.
+        insert_position = next;
     }
 }
 
@@ -432,39 +482,46 @@ R1 and R2 forms the algorithm of removal:
 
 To fill the position p vacated by Remove(), the tail of cluster at p+1 is used. To fill the rest, the tail of the cluster is removed to become the head of the same cluster.
 
+The core algorithm of remove is implemented in `RemoveAndRelocate()`.
+
 ```c++
 void Remove(Key& key)
 {
-    int position = LookupIndex(key);
+    int position = LookupIndex(key, Hash(key));
     if( position < 0 )
-        return; //not in the table.
+        return; 
 
-    Remove(position);
+    RemoveRelocateAndAdjust(position);
 }
 
-Entry Remove(int position)
+Entry RemoveRelocateAndAdjust(int position)
 {
     int last_affected_position = position;
-    Entry e = Remove(position, last_affected_position);
+    Entry entry = Remove(position, &last_affected_position);
+    return entry;
 }
 
-Entry Remove(int position, int& last_affected_position)
-{   //fill the empty position with the tail of the cluster of position+1.
+Entry RemoveAndRelocate(int position, int* last_affected_position)
+{
+    Entry entry = table[position];
     while(true)
     {
         if( position == Capacity() - 1 || table[position+1].Empty() || table[position+1].distance == 0)
-        {//no next cluster to fill, or next position is empty or next position is already in perfect bucket.
+        {
             table[position].SetEmpty();
             last_affected_position = position;
             return;
         }
         int next = TailOfMyCluster(position+1);
         table[position] = table[next];
-        table[position].distance -= next - position; //adjust distance.
+        table[position].distance -= next - position;
         position = next;
     }
+    return entry;
 }
 ```
+
+The following examples illustrate the algorithm of remove.
 
 ### Remove 32
 
@@ -532,12 +589,12 @@ cluster 1 is alreadly optimally located.
 
 ![remove 10](/img/hashing/cluster-remove-10.dot.png)
 
+This post covers the basic operations on the clustered hashing table. This is enough for most of the use cases. However, in some real time systems, we need to spread out the time spent to resize the table. The next post focuses on this specific problem. As it turns out, Clustered Hashing has a neat solution to the incremental resizing problem. I discusses it in the next post: [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %}).
 
-##
+## References
 
-This post covers the basic operations on the clustered hashing table. This is enough for most of the use cases. However, in some real time systems, we need to spread out the time spent to resize the table. The next post focuses on this specific problem. As it turns out, Clustered Hashing has a neat solution to the incremental resizing problem. 
-
-### References
-
+- [Clustered Hashing]({% link _posts/2019-08-19-clustered-hashing.md %})
+- [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %})
+- [Clustered Hashing: Modify On Iteration]({% link _posts/2019-09-09-clustered-hashing-modify-on-iteration.md %})
 - Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
 - [Malte Skarupke, Fibonacci Hashing: The Optimization that the WOrld Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)

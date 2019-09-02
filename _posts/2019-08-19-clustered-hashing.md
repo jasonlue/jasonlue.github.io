@@ -7,11 +7,13 @@ categories: algo
 
 ## Introduction
 
-I've recently been tasked to optimize the memory usage of a real time application (zeek.org). This application captures network packet and drives a lot of scripts which uses dictionaries. Under certain stress tests it has created a million dictioniaries in a matter of minutes. All of sudden how efficient the dictionary uses memory matters a lot to the overall application memory consumption.
+I've recently been tasked to optimize the memory usage of a real time application (zeek.org). This application captures network packet and drives a lot of scripts that use dictionaries. Under certain stress tests it has created around a million dictioniaries in a matter of minutes. All of sudden how efficient the dictionary uses memory matters a lot to the overall application's memory consumption.
 
-Unsurprisingly the dictionary is implemented as chain-linked hash table. Why chain hash table is so popular? Let's step back a little to start from the motivation to have a hash table and see what leads us to chain hash table.
+Unsurprisingly the dictionary is implemented as chain-linked hash table. Why is chained hash table so popular in practice? Let's step back a little to start from the motivation to have a hash table and see what led us here and see if we can do better.
 
 ## Speed up Lookup
+
+One of the fundamental funcionality in software is lookup. To speed up the lookup is an important goal.
 
 ### Unsorted List
 
@@ -26,29 +28,29 @@ Now we want to do better in lookup. Considering in computer science (and in ever
 
 ### Sorted List
 
-If we sacrifice time used in insert a bit, we can keep the list in order. You can use binary search for lookup in O(lgN) time. For Insert, we first need to find the right position, same as lookup in O(lgN), then we need to shift all items by one to the right to make room for the new item, and that's O(N). Remove is similar to Insert, you need to find the item first in O(lgN) time, and then you need to shift left all items on the right of the position by one.
+If we sacrifice time used in insert a bit, we can keep the list in order. You can use binary search for lookup in O(lgN) time. For insert, we first need to find the right position, same as lookup in O(lgN); then we need to shift all items larger than the new item by one to the right to make room for it, and that's O(N). Remove is similar to insert, you need to find the item first in O(lgN) time, and then you need to shift left all items on the right of the position by one.
 
     Lookup: O(lgN)
     Insert: O(lgN) + O(N) = O(N)
     Remove: O(lgN) + O(N) = O(N)
     Space : O(N)
 
-Wait, you'd think, insert and remove can be as fast as O(lgN) if we use single link list. But can you do binary search in an sorted link list? You simply have to look one by one. This solution is worst the basic unsorted one in every aspect. And don't forget, by using link list, you use more space, as pointers occupy space, not small, 8 bytes each. We will revisit this later.
+Wait, you'd think, insert and remove can be as fast as O(lgN) if we use single link list. But can you do binary search in an sorted link list? You simply have to look one by one. This solution is worse than the basic unsorted one in every aspect. And don't forget, with link list, you use more space, as pointers occupy space, not small, 8 bytes each. We will revisit this later.
 
 So keep list in order improves lookup greatly, but with heavy sacrifice on insert and remove. Is this a bad idea at all? Not necessarily. If you have a dictionary you insert once, never remove it, then most of the time is lookup. It is still a sensible solution.
 
 ### Binary Search Tree (BST)
 
-The next idea is to sacrice space. If adding one pointer on the item  doesn't work, How about adding two? If each item contains two pointers, we can maintain it as a binary search tree. The idea of BST is to keep items sorted, but in a special binary tree form. Lookup can perform binary search just like sorted list, but insert and remove are almost as fast as lookup. After finding the item or position, you don't need to shift items back and forth. You simply change pointers to insert and remove, which takes constant time. Assume the binary tree is balanced because a variation of the BST, red black tree, can keep the tree balanced with a small price (`lgN` swaps).
+The next idea is to sacrice space. If adding one pointer on the item  doesn't work, How about adding two? If each item contains two pointers, we can maintain it as a binary search tree. The idea of BST is to keep items sorted, but in a special binary tree form. Lookup can perform binary search just like sorted list, but insert and remove are almost as fast as lookup. After finding the item or position, you don't need to shift items back and forth. You simply change pointers to insert and remove, which takes almost constant time. Assume the binary tree is balanced because a variation of the BST, red black tree, can keep the tree balanced with a small price (`lgN` swaps).
 
     Lookup: O(lgN)
     Insert: O(lgN)
     Remove: O(lgN) 
     Space : O(N)
 
-This is good, isn't it? Not so fast.  As each item now requires two pointers, and each pointer is 8 bytes in 64bit CPU system, each item consumes 16 extra bytes. Suppose average item size is S, we have D=(8+8+S)/S. The space is actually O(DN). Theorectically O(DN) = O(N), but in reality you still uses D times memory than necessary. For an integer of 4 bytes, D=5.
+This is good, isn't it? Not so fast.  As each item now requires two pointers, and each pointer is 8 bytes in 64bit CPU system, each item consumes 16 extra bytes. Suppose average item size is S, we have D=(8+8+S)/S. The space is actually O(DN). Theorectically O(DN) = O(N), but in reality you still uses D times memory than necessary. For an integer of 4 bytes, D=5. That's a lot of memory than necessary.
 
-Doesn't indirection of pointers consume computer time? For each item, you have to follow its pointers to another item. Suppose read item takes x amount of time, and load extra pointer take y amount of time, lookup actually takes O(lg((x+y)/xN) = O(lg(CN)) = O(lgC+lgN), given C=(x+y)/x. When x is small, such as read an 4-byte integer, load 8-byte takes at least same amount of time. So you could easily double the lookup time. It can be even worse... When items approach certain large counts, random pointers cause cache misses: the item pointed to is not in the current cache and CPU needs to reload it from the RAM. This is very costly. We will revisit it later. So the acutally binary search tree performance is:
+Doesn't indirection of pointers consume computer time too? For each item, you have to follow its pointers to another item. Suppose read item takes x amount of time, and load extra pointer take y amount of time, lookup actually takes O(lg((x+y)/xN) = O(lg(CN)) = O(lgC+lgN), given C=(x+y)/x. When x is small, such as read an 4-byte integer, load 8-byte takes at least same amount of time. So you could easily double the lookup time. It can be even worse... When items approach certain large counts, random pointers cause cache misses: the item pointed to is not in the current cache and CPU needs to reload it from the RAM. This is very costly. We will revisit it later. So the acutally binary search tree performance is:
 
     Lookup: O(lgCN) = O(lgC + lgN)
     Insert: O(lgCN) = O(lgC + lgN)
@@ -412,14 +414,16 @@ Heres the visual comparison of Chained and Clustered Hashing:
 |---------------|-----------------|
 |![Chained](/img/hashing/chain.dot.png)|![Clustered](/img/hashing/cluster.dot.png) |
 
-I'll discuss the details of Clustered Hashing operation in the next post: 
+I'll discuss the details of Clustered Hashing operation in the next post: [Clustered Hashing: Basic Operations]({% link _posts/2019-08-26-clustered-hashing-basic-operations.md %})
 
 ## Lessons Learned
 
 **"There can be no progress, no achievements, without sacrifice, and a man's worldly success will be in the measure that he sacrifices." -James Allen, As a Man Thinketh**
 
-
 ## References
 
+- [Clustered Hashing: Basic Operations]({% link _posts/2019-08-26-clustered-hashing-basic-operations.md %})
+- [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %})
+- [Clustered Hashing: Modify On Iteration]({% link _posts/2019-09-09-clustered-hashing-modify-on-iteration.md %})
 - Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
 - [Malte Skarupke, Fibonacci Hashing: The Optimization that the WOrld Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)

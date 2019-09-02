@@ -93,31 +93,12 @@ From simple Open Addressing Hashing to Clustered Hashing, we've broken a few rul
 
 Here's the optimized algorithm: When we successfully looked up an item successfully in more than one tries, we remap the item to a new positions according to current table size. It sacrifices a bit of time on the first lookup to make the sequential lookups on the same item faster. This is also a good complement to remap when inserting new items. If inserting new items becomes less frequent but lookup becomes more frequent, this improvement make a big difference.
 
-## Fibonacci Hashing
-
-To get the bucket from key, we use 
-
-    bucket=M(H(key),table_size)
-
-Up to now we haven't touched hash function and map function. Hash functions are extensively studied but we seem to stick with a very simple map function:
-
-    M(hash,table_size) = hash % table_size.
-
-There are a few issues with this map function:
-- table_size need to be a prime to make it really effective. And the increasingly large primes are hard, and expensive to find. When we compromise with just an odd large integer, the mapping function may perform worse. It results in more collisions.
-- hash % table_size looks very simple, but is expensive to calculate. It uses division, thus a loop is involved.
-- the bucket mapping depends heavily on the hash function. A bad hash function, for example, an integer identity function, may cause a lot of collisions.
-
-Fibonacci Hashing is a map function from hash to a range of (0, table_size). It solves all three issues above and add one more benefit in the case of incremental resizing.
-
-- table_size is always 2^N.
-- bucket = M(hash,N) = (hash * 2^64 / phi) << (64-N) >> (64-N), phi = Golden Ratio = 1.618033987...
-
-2^64/phi = 11400714819323198485
-
-
-
+The next post touches a special requirement on some hash tables: [Clustered Hashing: Modify On Iteration]({% link _posts/2019-09-09-clustered-hashing-modify-on-iteration.md %})
 ## References
 
+- [Clustered Hashing]({% link _posts/2019-08-19-clustered-hashing.md %})
+- [Clustered Hashing: Basic Operations]({% link _posts/2019-08-26-clustered-hashing-basic-operations.md %})
+- [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %})
+- [Clustered Hashing: Modify On Iteration]({% link _posts/2019-09-09-clustered-hashing-modify-on-iteration.md %})
 - Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
 - [Malte Skarupke, Fibonacci Hashing: The Optimization that the WOrld Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)
