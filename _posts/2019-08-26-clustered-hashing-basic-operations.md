@@ -134,7 +134,6 @@ The hash is saved with key-value pair in the table entry here. When table size g
 
 distance is put as 2-byte unsigned integer directly in the entry. If extra space savings is necessary, we can put distance into a separate array with table array to have one byte distance and can possibly take 2-byte distance when it is necessary. We usually require entries are in multiples of 8 to keep it alligned to perform fast. With Clustered Hashing, distances are evenly distributed and very rarely go over log2(N). A dictionary of 1 million entries usually has distances less than 20.
 
-
 ```c++
 template<class Key, class Value> 
 class Dictionary
@@ -164,7 +163,6 @@ class Dictionary
     int Buckets() { return 1<<log2_buckets;}
     int Capacity() { return (1<<log2_buckets) + log2_buckets;}
 };
-
 ```
 
 ## Lookup
@@ -292,7 +290,6 @@ int LookupIndex(Key key, hash_t hash, int bucket, int end, int* insert_position 
         *insert_distance = i - bucket;
     return -1;
 }
-
 ```
 
 ![Clustered](/img/hashing/cluster.dot.png)
@@ -385,7 +382,6 @@ void InsertAndRelocate(Entry& entry, int position, int* last_affected_position)
         insert_position = next;
     }
 }
-
 ```
 
 The following examples to insert items one by one from empty table with table_size = 10 and capacity = 14.
