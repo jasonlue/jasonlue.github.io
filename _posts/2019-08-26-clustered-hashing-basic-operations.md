@@ -156,6 +156,7 @@ class Dictionary
 
     Entry* table;
     char log2_buckets; //2^log2_buckets is the table_size.
+    int num_entries;
 
     hash_t Hash(const Key& key) const;
     int BucketByHash(uint32 hash, int log2_table_size) const;
