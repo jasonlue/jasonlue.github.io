@@ -140,6 +140,7 @@ void InsertRelocateAndAdjust(Entry& entry, int insert_position)
     InsertAndRelocate(entry, insert_position, &last_affected_position);
     if( Remapping() && insert_position <= remap_end && remap_end < last_affected_position )
         remap_end = last_affected_position;
+    ...
 }
 ```
 

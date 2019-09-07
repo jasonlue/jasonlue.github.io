@@ -42,14 +42,14 @@ The project I worked on (zeek.org) requires support of modification on iteration
 
 For each iteration, we maintain an iteration cookie to keep state of the iteration. The hash table keeps a list of iteration cookies for adjustment on modification. 
 
-Iteration Cookie uses `next` non-empty item to output. It also maintains `inserted` container for items inserted before `next` during iteration. Similarly, it uses `visited` to keep items removed after `next` during iteration.
+Iteration Cookie uses `next` non-empty item to output. It also maintains `inserted` list for items inserted before `next` during iteration. Similarly, it uses `visited` to keep items removed after `next` during iteration. `next` splits hash table items into 2 ranges: iterated range [0,next) and to-be-iterated range [next, capacity).
 
 ```c++
 struct IterCookie
 {
-    int next; //track the position to be iterated next.
-    vector<Dictionary::Entry> inserted; //items inserted before next iteration point.
-    vector<Dictionoary::visited;//items at or after next but is already visited.
+    int next;
+    vector<Dictionary::Entry> inserted;
+    vector<Dictionoary::visited;
 };
 
 class Dictionary
@@ -61,7 +61,7 @@ class Dictionary
 
 ## Iteration
 
-Iteration on open addressing hash table is straight-forward. Goes through every item in the table, skipping empty positions.
+Iteration on open addressing hash table is straight-forward. Goes through every item in the table, skipping empty positions. With `inserted` and `visited`, we iterate `inserted` first.  For each item in the table, we ignore if it's in the `visited` list. At the same time, remove the item from `visited` because it's already iterated and the item is unique in the hash table to keep visited as short as possible.
 
 ```c++
 ///given position, find the next non-empty item. pass -1 to get the first one. return Capacity() if no more.
@@ -75,91 +75,6 @@ int Next(int position)
     return position;
 }
 
-bool NextEntry(Key& key, Value& value, IterCookie& it)
-{
-    if( it.next < 0 ) //initial value.
-        it.next = Next(-1);
-
-    if( it.next >= Capacity() )
-        return false;
-
-    //special case in sizeup during iteration.
-    if( table[it.next].Empty() )
-        it.next = Next(it.next);
-
-    if( it.next >= Capacity() )
-        return false;
-
-    key = table[it.next].key;
-    value = table[it.next].value;
-    it.next = Next(it.next);
-    return true;
-}
-```
-
-## insert on iteration
-
-Inserting a new item into position p affects the range [p,q], where p is the insertion position of the item. q is the last_affected_position according the the algorithm of insert in post [Clustered Hashing: Basic Operations]({% link _posts/2019-08-26-clustered-hashing-basic-operations.md %}). The new item is inserted into p  and items within [p+1,q] are adjusted.
-
-An iteration is in progress, with its `next` to be iterated the next round.
-
-### handle newly inserted item at [p]
-
-First we need to handle the newly inserted item. If it's inserted before `next`, then it will not be iterated anymore because iterator will not go back. In this case, we put it into `inserted` look aside container. We modify the iteration algorithm to iterate the lookaside container `inserted` first during iteration before moving next forward.
-
-```c++
-
-void Insert(Entry entry, int position)
-{
-    int last_affected_position = position;
-    Insert(entry, position, last_affected_position);
-    for( auto c: cookies)
-        AdjustOnInsert(c, entry, insert_position, last_affected_position)
-}
-
-void AdjustOnInsert(IterCookie& c, Entry& entry, int insert_position, int last_affected_position)
-{
-    if( insert_position < c.next )
-        c.inserted.push_back(entry);
-    ...
-}
-
-bool NextEntry(Key& key, Value& value, IterCookie& it)
-{
-    //iterate inserted first
-    if(!it.inserted.empty())
-    {
-        Value v = it.inserted.back().value;
-        k = it.inserted.back().key;
-        it.inserted.pop_back();
-        return v;
-    }
-
-    if( it.next < 0 ) //initial value.
-        it.next = Next(-1);
-
-    if( it.next >= Capacity() )
-        return false;
-
-    //special case in sizeup during iteration.
-    if( table[it.next].Empty() )
-        it.next = Next(it.next);
-
-    if( it.next >= Capacity() )
-        return false;
-
-    key = table[it.next].key;
-    value = table[it.next].value;
-    it.next = Next(it.next);
-    return true;
-}
-```
-
-### handle adjustment of existing items within [p+1,q]
-
-The items that has been iterated already (before next) may moved down to cross the `next` boundary and become part of to-be-iterated range. Without handling it, we will iterator these items more than once. To handle it, we first identify what are these items and marking them as visited by copying them into `visited` container and modify the iteration algorithm to ignore them.
-
-```c++
 bool NextEntry(Key& key, Value& value, IterCookie& it)
 {
     //iterate inserted first.
@@ -202,9 +117,49 @@ bool NextEntry(Key& key, Value& value, IterCookie& it)
 }
 ```
 
-#### detect items that cross down `next` boundary during adjustment
+## Adjustment on insert during iteration
 
-##### `next` is out of adjustment range
+Adjustment on insert is to manipulate inserted and visited list. If an item is inserted but passed the next iteration point, it's added to inserted list to be iterated. If an item was iterated but now pushed down passing next iteration point, we put it into visited list for it to be ignored.
+
+Inserting a new item into position p affects the range [p,q], where p is the insertion position of the item. q is the last_affected_position according the the algorithm of insert in post [Clustered Hashing: Basic Operations]({% link _posts/2019-08-26-clustered-hashing-basic-operations.md %}). The new item is inserted into p  and items within [p+1,q] are adjusted.
+
+An iteration is in progress, with its `next` to be iterated the next round.
+
+### handle newly inserted item at [p]
+
+An item inserted before `next` will not be iterated normally because iterator will not go back. In this case, we put it into `inserted` list.
+
+```c++
+void InsertRelocateAndAdjust(Entry& entry, int insert_position)
+{
+    int last_affected_position = position;
+    InsertAndRelocate(entry, insert_position, &last_affected_position);
+    if( Remapping() && insert_position <= remap_end && remap_end < last_affected_position )
+        remap_end = last_affected_position;
+    for( auto c: cookies)
+        AdjustOnInsert(c, entry, insert_position, last_affected_position)
+}
+
+void AdjustOnInsert(IterCookie& c, Entry& entry, int insert_position, int last_affected_position)
+{
+    if( insert_position < c.next )
+        c.inserted.push_back(entry);
+    ...
+}
+```
+
+### handle adjustment of items
+
+#### Detect adjustment range where if `next` is in, the adjustment is necessary
+
+The new item is inserted to [p]. The first item that moves from is [p]. The last position an item moves to is [q].
+
+- if `next<=p`, no item's before `next`, so no item can cross down `next`.
+- if `next>q`, no item's at or after `next`, so no item can cross to at or after `next`.
+
+This means the range where adjustment is necessary, ie. adjustment range, is [p+1,q].
+
+The following diagram shows the conditions when `next` is out of adjustment range [p+1,q].
 
 In the following hash table, we insert item 61. It's bucket b = 1. According to insert algorithm, it's appened to the tail of the cluster 1. Its insert position p = 4. [p+1,q] = [5,11] is the adjustment range where item 22 has been moved from position 4 to position 7 and item 17 has been moved from position 7 to 11.
 
@@ -222,26 +177,25 @@ In the following hash table, we insert item 61. It's bucket b = 1. According to 
 
 To sum up, if `next` is out of adjustment range [p+1,q], no adjustment is necessary.
 
-##### `next` is within adjustment range
+##### when `next` is within adjustment range [p+1,q]
 
 Things are getting interesting within the range. Let's see an example when `next = 5`
-From the chart, we can spot that item 22 is the only item (was in position 4) that was in iterated range [0,5), and is now at position 7, in the to-be-iterated range [5,]. In this case, we put item 22 to `visited` container to be ignored during future interations.
-
+From the chart, we can spot visually that item 22 is the only item (was in position 4) that was in iterated range [0,5), and is now at position 7, in the to-be-iterated range [5,]. In this case, we put item 22 to `visited`.
 
 ![cluster-insert-61-adjust-5](/img/hashing/cluster-insert-61-adjust-5.dot.png)
 
 Our first question is: how many items may cross the `next` boundary? The answer is one and only one. Here is the proof.
 
-From the right of the diagram we see the relocating paths. Based on the insertion adjustment algorithm, 
+From the right of the diagram we see the relocating paths. Based on the insertion adjustment algorithm,
 
-- The whole path covers the whole adjustment range.
-- Individual relocating arc doesn't overlap with each other. They are simply connected. The end of one arc becomes the start of the next arc.
+- The complete path covers the whole adjustment range.
+- Individual relocating arcs don't overlap with each other. They are simply connected. The end of one arc becomes the start of the next arc.
 
 If we draw the line of `next` horizontally, it will cross one and only one arc. As each arc represents one relocation, we know that one and only one relocation cross `next` boundary.
 
 Given that one and only one item crosses the boundary, our second question is what is this item?
 
-According to the insert algorithm, when we adjust an item, we take it out and append it to the tail of its cluster. So the crossed item is the tail of its cluster. But which cluster? We know the crossed item move from its head and to its tail and it crosses `next` position. This means `next` also belongs to its cluster. So its the cluster `next` is in. `crossed_item = TailOfMyCluster(next)`
+According to the insert algorithm, when we adjust an item, we take it out and append it to the tail of its cluster. So the crossed item is the tail of its cluster. But which cluster? We know the crossed item move from its head and to its tail and it crosses `next` position. This means `next` also belongs to its cluster after the adjustment. So it's the cluster `next` is in. `crossed_item = TailOfClusterByPosition(next)`
 
 The complete AdjustOnInsert function becomes
 
@@ -253,7 +207,7 @@ void AdjustOnInsert(IterCookie& it, Entry& entry, int insert_position, int last_
 
     if (insert_position < it->next && it->next <= last_affected_position)
     {
-        int k = TailOfMyCluster(it.next);
+        int k = TailOfClusterByPosition(it.next);
         it.visited.push_back(table[k]);
     }
 }
@@ -268,19 +222,21 @@ void AdjustOnInsert(IterCookie& it, Entry& entry, int insert_position, int last_
 
 ![cluster-insert-61-adjust-11](/img/hashing/cluster-insert-61-adjust-11.dot.png)
 
-## remove on iteration
+## Adjustment on remove during iteration
 
-Removing item on position p makes [p] an empty position. This empty space triggers adjustments of the items following position p, by moving some items up to improve their distances, until certain conditions meet. This results in a modification range [p,q].
+Removing item on position p makes [p] an empty position. This empty space triggers adjustments of the items following position p, by moving some items up to improve their distances. q is either the end of table, capacity, or [q] is empty.
 
+### Handle removed item
 
+The removed item could be recently inserted into `inserted` list. So it's necessary to remove it from `inserted`.
 
-Remove adjustment is added to Remove(int position) function
+Remove adjustment is added to RemoveRelocateAndAdjust(int position) function
 
 ```c++
-Entry Remove(int position)
+Entry RemoveRelocateAndAdjust(int position)
 {
     int last_affected_position = position;
-    Entry e = Remove(position, last_affected_position);
+    Entry e = RemoveAndRelocate(position, &last_affected_position);
     for( auto c: cookies)
         AdjustOnRemove(c, e, position, last_affected_position);
     return e;
@@ -301,11 +257,15 @@ void AdjustOnRemove(IterCookie& c, Entry& entry, int position, int& last_adjuste
 
 ### Detect adjustment range
 
-Similar to insert, for an modified range [p,q], the adjustment range is [p+1,q]. This is because the adjustment is only necessary when one item crosses `next` up. That is, it was after `next` and now before `next`. When `next=p`, as `p` is the start of modified range, no item crosses `p` up.
+The modified range is [p,q].
+- if `next <= p`, no item moves up before `next` as the last item moved to is at [p].
+- if `next > q`, no item moves from at or after `next`
 
-It's illustrated by examples on border conditions.
+So the adjustment range is [p+1,q]
 
-Here is the original table beefore removing 21.
+The following diagrams illustrates `next` out of adjustment range [p+1,q].
+
+Here is the original table before removing 21.
 
 ![cluster-remove-21-adjust](/img/hashing/cluster-remove-21-adjust.dot.png)
 
@@ -326,9 +286,9 @@ The next 2 diagrams show when `next` is around the end of the range. As we can s
 
 ![cluster-remove-21-adjust-11](/img/hashing/cluster-remove-21-adjust-11.dot.png)
 
-#### `next` is within adjustment range [p+1,q]
+#### when `next` is within adjustment range [p+1,q]
 
-Relocation path in removal is similar to insert with opposite direction.  Relocation path covers the whole adjustment range. It's composed by reloating arc connected continuous one after the other without overlap, as illustrated below.
+Relocation path in removal is similar to insert with opposite direction.  Relocation path covers the whole adjustment range. It's composed by relocating arc connected continuously one after the other without overlap, as illustrated below.
 
 `next = p+1 = 3`
 ![cluster-remove-21-adjust-3](/img/hashing/cluster-remove-21-adjust-3.dot.png)
@@ -342,7 +302,9 @@ In the diagram item 41 is the item that crosses `next=3`, from position 4 to pos
 - The item is the head of its cluster unless it's the item that fills the first vacancy, position p.
 
 The item is the head of the cluster right befor `next`, but cannot be smaller than p.
-So the item is at the position `max(position,HeadOfMyCluster(next-1))` because next is in range [p+1,q], next-1 is always valid.
+So the item is at the position `max(position,HeadOfClusterByPosition(next-1))` because next is in range [p+1,q], next-1 is always valid.
+
+Because remove leave one empty position, it this position happens to be next, then we need to adjust next to the next valid item or end of table.
 
 ```c++
 void AdjustOnRemove(IterCookie* c, const Entry& entry, int position, int last_adjusted_position)
@@ -350,10 +312,11 @@ void AdjustOnRemove(IterCookie* c, const Entry& entry, int position, int last_ad
     c->inserted.erase(remove(c->inserted.begin(), c->inserted.end(), entry), c->inserted.end());
     if (position < c->next && c->next <= last_adjusted_position)
     {
-        int crossing = max(position, HeadOfMyCluster(c->next-1));
-        c->inserted.push_back(table[crossing]);
+        int moved = HeadOfClusterByPosition(c->next-1);
+        if( moved < position )
+            moved = position; 
+        c->inserted->push_back(table[moved]);
     }
-    //c->next could be empty. adjust if it is.
     if(c->next < Capacity() && table[c->next].Empty())
         c->next = Next(c->next);
 }
@@ -364,7 +327,7 @@ Following the rules above, on diagram above, we have:
 - `p=2`, `q=10`
 - `next==3`
 - `next-1=2`
-- `HeadofMyCluster(2) = 1`
+- `HeadofClusterByPosition(2) = 1`
 - `max(p,1) = max(2,1)=2`, ie. position p.
 
 More examples below:
@@ -383,7 +346,7 @@ More examples below:
 
 ## More on iterations
 
-Adjusting iteration cookies during insert and remove is expensive. When iteration is in progress, we adapt certain operations. 
+Adjusting iteration cookies during insert and remove is expensive. When iteration is in progress, we adapt certain operations.
 
 ### lookup on iteration
     Avoid lookup optimization by moving not-in-place items to its right position after sizeup.
