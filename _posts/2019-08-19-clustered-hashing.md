@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: default
 title:  "Road to Clustered Hashing: Robinhood Hashing Revisioned"
 date:   2019-08-19 17:02:14 -0700
 categories: algo
