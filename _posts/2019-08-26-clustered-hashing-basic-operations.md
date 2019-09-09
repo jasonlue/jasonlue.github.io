@@ -617,5 +617,5 @@ This post covers the basic operations on the clustered hashing table: lookup, in
 - Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
 - [Malte Skarupke, Fibonacci Hashing: The Optimization that the WOrld Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)
 
-<div class="fb-comments" data-href="https://jasonlue.github.io/algo/2019/08/27/clustered-hashing-basic-operations.html" data-width="" data-numposts="10"></div>
+<div class="fb-comments" data-href="{{ page.url | absolute_url}}" data-width="" data-numposts="10"></div>
 
