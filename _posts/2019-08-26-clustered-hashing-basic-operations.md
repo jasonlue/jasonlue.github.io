@@ -1,12 +1,9 @@
 ---
-layout: post
+layout: postx
 title:  "Clustered Hashing: Basic Operations"
 date:   2019-08-26 17:02:14 -0700
 categories: algo
 ---
-
-<div id="fb-root"></div>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v4.0&appId=435157437357997&autoLogAppEvents=1"></script>
 
 ## Introduction
 
@@ -617,12 +614,4 @@ This post covers the basic operations on the clustered hashing table: lookup, in
 - Sebastian Sylvan, [Robin Hood Hashing should be your default Hash Table implementation](https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/)
 - [Malte Skarupke, Fibonacci Hashing: The Optimization that the WOrld Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)
 
-{{page.url | absolute_url}}
-
-{{url}}/{{page.url}}
-
-{{site.url}}/{{page.url}}
-
-
-<div class="fb-comments" data-href="{{ page.url | absolute_url}}" data-width="" data-numposts="10"></div>
 
