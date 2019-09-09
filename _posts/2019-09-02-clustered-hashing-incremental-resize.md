@@ -3,6 +3,7 @@ layout: postx
 title:  "Clustered Hashing: Incremental Resizing"
 date:   2019-09-02 17:02:14 -0700
 categories: algo
+description: "The post continues to develop algorithms on more advanced operations of Clustered Hashing: incremental resizing. Clustered Hashing takes advantages of Open Addressing Hashing to grow size in-place without extra temporary memory. It first discusses the triggers of the resizing algorithm. It then shows the algorithm of simple and fast resizing algorithm. With in-place resizing it introduces ways to remap the previous key into new table with bigger sizes. With the help of Fibonacci Hashing it shows improvements of performance where only half of the previous keys need to be remapped. It then introduces the lookup algorithm in a mixed-sized table. Finally it touches one extra optimization of lookup of previous existing keys in the mixed-sized table. With the explanation of the algorithm it is complemented with a lot of diagrams to illustrate the idea."
 ---
 
 Previous post doesn't touch resize of the hash table. Usually resize of the hash table is straight-forward. A new table is created; Insert all items in the orginal table to the new table; And finally destroy the old table.
@@ -44,7 +45,7 @@ int ThresholdEntries() const
 At the end of Insert(key), we add threshold test to trigger Size(). After possible size up, we continue Remap() procedure if necessary.
 
 ```c++
-oid  Insert(Key& key, Value& value){
+void  Insert(Key& key, Value& value){
     hash_t hash = Hash(key);
     int insert_position = 0;
     int insert_distance = 0;

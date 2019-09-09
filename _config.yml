@@ -16,7 +16,7 @@
 title: Programmer's Digest
 email: jasonlue@hotmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  Digest over how things work in softwares of my interest. What problems it tries to solve. How it is solved. Can we do better?
+  Digest over how things work in software. What problems it tries to solve. How it is solved. Can we do better?
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://jasonlue.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: jasonlue2

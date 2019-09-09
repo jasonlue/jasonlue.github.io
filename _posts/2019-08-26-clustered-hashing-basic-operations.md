@@ -3,6 +3,7 @@ layout: postx
 title:  "Clustered Hashing: Basic Operations"
 date:   2019-08-26 17:02:14 -0700
 categories: algo
+description: "The post introduces Clustered Hashing idea: to flatten Chained Hashing into Open Addressing Hashing table. It starts with strictly defined properties of the Clustered Hashing with 4 basic properties and 4 derived properties. With these 8 properties it implements the core functionality of hash table: lookup, insert and remove. Together with C++ implemented code it illustrates the core algorithm with a lot of diagrams."
 ---
 
 ## Introduction

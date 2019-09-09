@@ -3,6 +3,7 @@ layout: postx
 title:  "Clustered Hashing: Modify On Iteration"
 date:   2019-09-09 17:02:14 -0700
 categories: algo
+description: "The post continues to develop algorithms on even more advanced operations of Clustered Hashing: modification on iteration. It first elaborates why this rarely used feature of hash table is sometimes useful. It then focuses on the iteration algorithm, by introducing inserted and visited lists. It then points out the necessity of adjustments on insert and remove because they modified the hash table for the current key as well as relocation of existing keys."
 ---
 
 Iteration on the hash table is usually a constant operation. It doesn't modify the table. Since it's constant, the implementation is straight-forward. It's even simpler for open addressing hash tables: just go through every index of the table, skip empty items.

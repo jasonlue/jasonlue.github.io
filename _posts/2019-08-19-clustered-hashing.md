@@ -3,6 +3,8 @@ layout: postx
 title:  "Road to Clustered Hashing: Robinhood Hashing Revisioned"
 date:   2019-08-19 17:02:14 -0700
 categories: algo
+description: "Reviewed to compromises we make to make lookup faster in software data structures from naive to sorted list, binary search tree, and hash table. Then dig deeper on different hash table implementations: the traditional Chained Hashing and open Addressing Hashing to solve hash/bucket conflicts. It then digs deeper into Open Addressing Hashing by comparing traditional Open Addressing Hashing and Robinhood Hashing. Finally it develops the idea of Robinhood Hashing further and introduces Clustered Hashing."
+
 ---
 
 ## Introduction
