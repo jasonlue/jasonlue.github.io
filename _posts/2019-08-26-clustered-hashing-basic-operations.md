@@ -621,7 +621,6 @@ This post covers the basic operations on the clustered hashing table: lookup, in
 
 {{url}}/{{page.url}}
 
-
 {{site.url}}/{{page.url}}
 
 
