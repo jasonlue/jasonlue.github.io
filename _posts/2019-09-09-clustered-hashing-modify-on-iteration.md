@@ -43,7 +43,7 @@ The project I worked on (zeek.org) requires support of modification on iteration
 
 For each iteration, we maintain an iteration cookie to keep state of the iteration. The hash table keeps a list of iteration cookies for adjustment on modification. 
 
-Iteration Cookie uses `next` non-empty item to output. It also maintains `inserted` list for items inserted before `next` during iteration. Similarly, it uses `visited` to keep items removed after `next` during iteration. `next` splits hash table items into 2 ranges: iterated range [0,next) and to-be-iterated range [next, capacity).
+Iteration Cookie uses `next` non-empty item to output. It also maintains `inserted` list for items inserted before `next` during iteration. Similarly, it uses `visited` to keep items that was before `next` but now after `next` due to relocations of items on insert or remove during iteration. `next` splits hash table items into 2 ranges: iterated range [0,next) and to-be-iterated range [next, capacity).
 
 ```c++
 struct IterCookie
@@ -68,7 +68,6 @@ Iteration on open addressing hash table is straight-forward. Goes through every 
 ///given position, find the next non-empty item. pass -1 to get the first one. return Capacity() if no more.
 int Next(int position)
 {
-    ASSERT(-1 <= position && position < Capacity());
     do
     {
         position++;
