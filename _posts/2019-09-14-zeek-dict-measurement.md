@@ -54,22 +54,23 @@ cd ~/zeek.test/zeek
 Use Tcp Connection dictionary with max of 147,695 keys as the test base.
 
 measuring command:
-cd ~/zeek.test/zeek
-chained dictionary:
-./zeek.stats -! ..//key/Connection.147695.key@1
-./zeek.stats -! ..//key/Connection.147695.key@10
-./zeek.stats -! ..//key/Connection.147695.key@100
-./zeek.stats -! ..//key/Connection.147695.key@1000
-./zeek.stats -! ..//key/Connection.147695.key@10000
-./zeek.stats -! ..//key/Connection.147695.key@100000
 
-clustered dictionary:
-./zeek.open.stats -! ..//key/Connection.147695.key@1
-./zeek.open.stats -! ..//key/Connection.147695.key@10
-./zeek.open.stats -! ..//key/Connection.147695.key@100
-./zeek.open.stats -! ..//key/Connection.147695.key@1000
-./zeek.open.stats -! ..//key/Connection.147695.key@10000
-./zeek.open.stats -! ..//key/Connection.147695.key@100000
+    cd ~/zeek.test/zeek
+    chained dictionary:
+    ./zeek.stats -! ..//key/Connection.147695.key@1
+    ./zeek.stats -! ..//key/Connection.147695.key@10
+    ./zeek.stats -! ..//key/Connection.147695.key@100
+    ./zeek.stats -! ..//key/Connection.147695.key@1000
+    ./zeek.stats -! ..//key/Connection.147695.key@10000
+    ./zeek.stats -! ..//key/Connection.147695.key@100000
+
+    clustered dictionary:
+    ./zeek.open.stats -! ..//key/Connection.147695.key@1
+    ./zeek.open.stats -! ..//key/Connection.147695.key@10
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100
+    ./zeek.open.stats -! ..//key/Connection.147695.key@1000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@10000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100000
 
 |dictionary size                 | 1   | 10 |  100| 1K | 10K |100K
 |--------------------------------|-----|----|-----|----|-----|----|
@@ -81,16 +82,14 @@ clustered dictionary:
 
 As we can see, Clustered dictionary uses a lot less memory especially when the dictionary size is small. Since more than 99% of the dictionaries in zeek are less than 8 in size. The memory improvement overall is estimated around 3x (34% of the chained dictionary) (when dictionary size is 10). More accurate measurement is in the next section.
 
-```
-cd ~/zeek.test/zeek
-./zeek.stats -r ../pcap/10K.pcap
-./zeek.stats -r ../pcap/100K.pcap
-./zeek.stats -r ../pcap/1M.pcap
+    cd ~/zeek.test/zeek
+    ./zeek.stats -r ../pcap/10K.pcap
+    ./zeek.stats -r ../pcap/100K.pcap
+    ./zeek.stats -r ../pcap/1M.pcap
 
-./zeek.open.stats -r ../pcap/10K.pcap
-./zeek.open.stats -r ../pcap/100K.pcap
-./zeek.open.stats -r ../pcap/1M.pcap
-```
+    ./zeek.open.stats -r ../pcap/10K.pcap
+    ./zeek.open.stats -r ../pcap/100K.pcap
+    ./zeek.open.stats -r ../pcap/1M.pcap
 
 |malloc'd memory (M)     |10K.pcap|100K.pcap|1M.pcap|
 |------------------------|--------|---------|-------|
@@ -104,7 +103,7 @@ As it turns out, the memory consumed by all dictionaries is around 30% of the ch
 
 ### Overall application measurement
 
-The memory saving effect on the overall application depends on how much memory in the application is consumed by the dictionaries.
+The memory saving effect on the overall application depends on how much memory in the application is consumed by the original chained dictionaries. The overall memory savings is pretty straight-forrward to measure, just by -Q flag provided by zeek.
 
     ./zeek -Qr ../pcap/10K.pcap
     ./zeek -Qr ../pcap/100K.pcap
@@ -131,28 +130,29 @@ To test the cache misses effect, the dictionary is not destroyed after each roun
 
 #### measure with different rounds
 
-```
-cd ~/zeek.test/zeek
-./zeek.stats -! ..//key/Connection.147695.key@100:1000
-./zeek.stats -! ..//key/Connection.147695.key@100:10000
-./zeek.stats -! ..//key/Connection.147695.key@100:100000
-./zeek.stats -! ..//key/Connection.147695.key@100:200000
-./zeek.stats -! ..//key/Connection.147695.key@100:4000000
-./zeek.stats -! ..//key/Connection.147695.key@100:6000000
-./zeek.stats -! ..//key/Connection.147695.key@100:8000000
-```
+Accurate measument on time cost is harder than space because the time measured varies greatly from run to run based on the environment when it runs. The idea to make it more accurate is to run many rounds and then average them out to eliminate fluctuations due to environment.
+
+But how many rounds is necessary to stablize the measurements? The criteria I used is to keep increasing the rounds until the numbers stablize but don't deteriorate so as not to trigger cache miss effect discussed in the next section. Ususally 100,000 to 1 million measured operations can result in a stable number.
+
+
+    cd ~/zeek.test/zeek
+    ./zeek.stats -! ..//key/Connection.147695.key@100:1000
+    ./zeek.stats -! ..//key/Connection.147695.key@100:10000
+    ./zeek.stats -! ..//key/Connection.147695.key@100:100000
+    ./zeek.stats -! ..//key/Connection.147695.key@100:200000
+    ./zeek.stats -! ..//key/Connection.147695.key@100:4000000
+    ./zeek.stats -! ..//key/Connection.147695.key@100:6000000
+    ./zeek.stats -! ..//key/Connection.147695.key@100:8000000
 
 clustered dictionary:
 
-```
-./zeek.open.stats -! ..//key/Connection.147695.key@100:1000
-./zeek.open.stats -! ..//key/Connection.147695.key@100:10000
-./zeek.open.stats -! ..//key/Connection.147695.key@100:100000
-./zeek.open.stats -! ..//key/Connection.147695.key@100:200000
-./zeek.open.stats -! ..//key/Connection.147695.key@100:4000000
-./zeek.open.stats -! ..//key/Connection.147695.key@100:6000000
-./zeek.open.stats -! ..//key/Connection.147695.key@100:8000000
-```
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100:1000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100:10000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100:100000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100:200000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100:4000000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100:6000000
+    ./zeek.open.stats -! ..//key/Connection.147695.key@100:8000000
 
 When the rounds increase to certain level where cache miss is unavoidable, Chained dictionary performance deteriates.
 
@@ -177,15 +177,13 @@ When the rounds increase to certain level where cache miss is unavoidable, Chain
 
 * remove, clustered holds up the normally performance without deteriorating requires some investigation and explanation.
 
-##### variations among different rounds
-
-The time measured varies greatly from run to run. The criteria I used is to keep increasing the rounds until the numbers stablize but don't deteriorate so as not to trigger cache miss effect discussed in the next section. Ususally 100,000 to 1 million measured operations can result in a stable number.
-
 ##### cache miss effect displayed
 
 When the rounds are less than 200K, the application still manages to keeps the majority part of data structure in cache. 
 
-When rounds increase to 400K, we have 400,000 dictionaries of size 100 at the maximum. Each item consumes 125 bytes in chained dictionary as measured in Memory section. we use `100 * 125 * 400K = 5G` memory. When cache miss happens, the whole operation time is dominated by reading data from main memory and loading it into cache. According to [Computer Latency at a Human Scale](https://www.prowesscorp.com/computer-latency-at-a-human-scale/), reading from main RAM is around 100 nanosecond. Chained dictionary successful lookup time's increase from 22 to 267 nanoseconds likely caused by 2 L3 cache misses. Based on the algorithm of chained dictionary implementation in zeek, the key is a pointer to another address. The difference between successful lookups and unsuccessful lookups is that unsuccessful lookups finish probably on mismatched bucket, but successful lookups still need to compare keys. The reason 
+When rounds increase to 400K, we have 400,000 dictionaries of size 100 at the maximum. Each item consumes 125 bytes in chained dictionary as measured in Memory section. we use `100 * 125 * 400K = 5G` memory. When cache miss happens, the whole operation time is dominated by reading data from main memory and loading it into cache.
+
+According to [Computer Latency at a Human Scale](https://www.prowesscorp.com/computer-latency-at-a-human-scale/), reading from main RAM is around 100 nanosecond. Chained dictionary successful lookup time's increase from 22 to 267 nanoseconds likely caused by 2 L3 cache misses. Based on the algorithm of chained dictionary implementation in zeek, the key is a pointer to another address. The difference between successful lookups and unsuccessful lookups is that unsuccessful lookups finish probably on mismatched bucket, but successful lookups still need to compare keys. The reason.
 
 So we see chained dictionary performance deteriorates greatly. The worst is the successful lookup. The time spent for it increases 10 folds from 22 nanosecs to 267 nanosecs. At the same time, clustered dictionary performance also decreases a bit, but it's far better than chained dictionary. So clustered dictionary causes a lot less catch misses during lookup.
 
@@ -193,29 +191,25 @@ Up to 200K rounds, the variation is due to measurement. 200K has the most data p
 
 #### Clustered dictionary performance improvements
 
-```
-cd ~/zeek.test/zeek
-./zeek.stats -! ../key/Connection.147695.key@1:1000000
-./zeek.stats -! ../key/Connection.147695.key@10:10000
-./zeek.stats -! ../key/Connection.147695.key@100:10000
-./zeek.stats -! ../key/Connection.147695.key@1000:1000
-./zeek.stats -! ../key/Connection.147695.key@10000:100
-./zeek.stats -! ../key/Connection.147695.key@100000:30
-./zeek.stats -! ../key/Connection.147695.key@-1:20
-```
+    cd ~/zeek.test/zeek
+    ./zeek.stats -! ../key/Connection.147695.key@1:1000000
+    ./zeek.stats -! ../key/Connection.147695.key@10:10000
+    ./zeek.stats -! ../key/Connection.147695.key@100:10000
+    ./zeek.stats -! ../key/Connection.147695.key@1000:1000
+    ./zeek.stats -! ../key/Connection.147695.key@10000:100
+    ./zeek.stats -! ../key/Connection.147695.key@100000:30
+    ./zeek.stats -! ../key/Connection.147695.key@-1:20
 
 clustered dictionary:
 
-```
-cd ~/zeek.test/zeek
-./zeek.open.stats -! ../key/Connection.147695.key@1:1000000
-./zeek.open.stats -! ../key/Connection.147695.key@10:10000
-./zeek.open.stats -! ../key/Connection.147695.key@100:10000
-./zeek.open.stats -! ../key/Connection.147695.key@1000:1000
-./zeek.open.stats -! ../key/Connection.147695.key@10000:100
-./zeek.open.stats -! ../key/Connection.147695.key@100000:30
-./zeek.open.stats -! ../key/Connection.147695.key@-1:20
-```
+    cd ~/zeek.test/zeek
+    ./zeek.open.stats -! ../key/Connection.147695.key@1:1000000
+    ./zeek.open.stats -! ../key/Connection.147695.key@10:10000
+    ./zeek.open.stats -! ../key/Connection.147695.key@100:10000
+    ./zeek.open.stats -! ../key/Connection.147695.key@1000:1000
+    ./zeek.open.stats -! ../key/Connection.147695.key@10000:100
+    ./zeek.open.stats -! ../key/Connection.147695.key@100000:30
+    ./zeek.open.stats -! ../key/Connection.147695.key@-1:20
 
 |dictionary size                            | 1 | 10|100| 1K|10K| *100K|147,695
 |-------------------------------------------|---|---|---|---|---|----- |-------
@@ -257,10 +251,8 @@ Didn't find an easy way to measure.
 
 Time is measured by running 12 rounds, dropping min and max and averaging the rest.
 
-```
-cd ~/zeek.test/zeek
-./cmp-all.sh
-```
+    cd ~/zeek.test/zeek
+    ./cmp-all.sh
 
 |processing time (s)     |10K.pcap|100K.pcap|1M.pcap|
 |------------------------|--------|---------|-------|
