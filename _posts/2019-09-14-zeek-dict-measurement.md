@@ -14,17 +14,18 @@ Install git and git large file storage (git-lfs)
 apt install git git-lfs
 
 clone zeek.test
-    `git clone https://github.com/jasonlue/zeek.test.git`
+
+    git clone https://github.com/jasonlue/zeek.test.git
 
 download pcap files & zeek executable from git-lfs for measurements.
 
 warning: large files (more than 1G) from git lfs will be downloaded into your local directory.
 
-    `git lfs fetch`
+    git lfs fetch
 
 ## Dictionary Stats
 
-Zeek and zeek scripts use dictionaries extensively. Most dictionaries are created by script and live with tcp/udp sessions. table and set in broscripts are both dictionary internally. Some script such as SMB protocol handler uses up to 5 dictionaries.
+Zeek and zeek scripts use dictionaries extensively. Most dictionaries are created by script and live with tcp/udp sessions. Tables and sets in broscripts are both dictionaries internally. Some scripts such as SMB protocol handler use up to 5 dictionaries.
 
 cd ~/zeek.test/zeek
 ./zeek.stats -r ../pcap/10K.pcap
@@ -50,7 +51,7 @@ cd ~/zeek.test/zeek
 
 ### Memory consumed by a single dictionary
 
-Use Tcp Connection dictionary with max of 147695 keys as the test base.
+Use Tcp Connection dictionary with max of 147,695 keys as the test base.
 
 measuring command:
 cd ~/zeek.test/zeek
@@ -78,9 +79,7 @@ clustered dictionary:
 
 ![dict-space.png](/img/zeek/dict-space.png)
 
-As we can see, Clustered dictionary uses a lot less memory when dictionary size is small. 99.94% of the dictionaries in zeek are less than 8 in size. The memory improvement overall reaches more than 3x, using only 30% memory of Chained dictionary.
-
-### Memory consumed by all dictionaries with different inputs
+As we can see, Clustered dictionary uses a lot less memory especially when the dictionary size is small. Since more than 99% of the dictionaries in zeek are less than 8 in size. The memory improvement overall is estimated around 3x (34% of the chained dictionary) (when dictionary size is 10). More accurate measurement is in the next section.
 
 ```
 cd ~/zeek.test/zeek
@@ -101,15 +100,19 @@ cd ~/zeek.test/zeek
 
 ![all-dict-space.png](/img/zeek/all-dict-space.png)
 
+As it turns out, the memory consumed by all dictionaries is around 30% of the chained dictionary.
+
 ### Overall application measurement
 
-./zeek -Qr ../pcap/10K.pcap
-./zeek -Qr ../pcap/100K.pcap
-./zeek -Qr ../pcap/1M.pcap
+The memory saving effect on the overall application depends on how much memory in the application is consumed by the dictionaries.
 
-./zeek.open -Qr ../pcap/10K.pcap
-./zeek.open -Qr ../pcap/100K.pcap
-./zeek.open -Qr ../pcap/1M.pcap
+    ./zeek -Qr ../pcap/10K.pcap
+    ./zeek -Qr ../pcap/100K.pcap
+    ./zeek -Qr ../pcap/1M.pcap
+
+    ./zeek.open -Qr ../pcap/10K.pcap
+    ./zeek.open -Qr ../pcap/100K.pcap
+    ./zeek.open -Qr ../pcap/1M.pcap
 
 |malloc'd memory (M)     |10K.pcap|100K.pcap|1M.pcap|
 |------------------------|--------|---------|-------|
