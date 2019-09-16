@@ -27,12 +27,19 @@ warning: large files (more than 1G) from git lfs will be downloaded into your lo
 Precompiled targets are under directory zeek
 
 - zeek, the original zeek. compiled by
+
     `./configure --enable-perftools`
+
 - zeek.stats, the original zeek compiled by
+
     `CXXFLAGS="-DUSE_DICT_STATS" ./configure --enable-perftools`
+
 - zeek.open, the new zeek with clustered dictionary, compiled by,
+
     `CXXFLAGS="-DUSE_OPEN_DICT" ./configure --enable-perftools`
+
 - zeek.open.stats, the new zeek with clustered dictionary as dict stats, compiled by
+
     `CXXFLAGS="-DUSE_OPEN_DICT -DUSE_DICT_STATS" ./configure --enable-perftools`
 
 ## Dictionary Stats
