@@ -27,12 +27,19 @@ warning: large files (more than 1G) from git lfs will be downloaded into your lo
 Precompiled targets are under directory zeek
 
 - zeek, the original zeek. compiled by
+
     `./configure --enable-perftools`
-- zeek.stats, the original zeek compiled by
+
+- zeek.stats, the original zeek with dict stats, under topic/jasonlue/dict_stats branch, compiled by 
+
     `CXXFLAGS="-DUSE_DICT_STATS" ./configure --enable-perftools`
-- zeek.open, the new zeek with clustered dictionary, compiled by,
+
+- zeek.open, the new zeek with clustered dictionary, under topic/jasonlue/open_dict or topic/jasonlue/dict_stats branch, compiled by,
+
     `CXXFLAGS="-DUSE_OPEN_DICT" ./configure --enable-perftools`
-- zeek.open.stats, the new zeek with clustered dictionary as dict stats, compiled by
+
+- zeek.open.stats, the new zeek with clustered dictionary as dict stats, under topic/jasonlue/dict_stats branch, compiled by
+
     `CXXFLAGS="-DUSE_OPEN_DICT -DUSE_DICT_STATS" ./configure --enable-perftools`
 
 ## Dictionary Stats
@@ -146,6 +153,7 @@ Accurate measument on time cost is harder than space because the time measured v
 
 But how many rounds is necessary to stablize the measurements? The criteria I used is to keep increasing the rounds until the numbers stablize but don't deteriorate so as not to trigger cache miss effect discussed in the next section. Ususally 100,000 to 1 million measured operations can result in a stable number.
 
+zeek.stats and zeek.open.stats adds a command line ! to accept a key file and indicates size of dictionary and how many rounds to run the measurement on.
 
     cd ~/zeek.test/zeek
     ./zeek.stats -! ..//key/Connection.147695.key@100:1000
@@ -187,7 +195,7 @@ When the rounds increase to certain level where cache miss is unavoidable, Chain
 
 ![removes-time-by-rounds.png](/img/zeek/removes-time-by-rounds.png)
 
-* remove, clustered holds up the normally performance without deteriorating requires some investigation and explanation.
+* remove, clustered holds up the normal performance without deteriorating requires some investigation and explanation.
 
 ##### cache miss effect displayed
 
@@ -195,11 +203,9 @@ When the rounds are less than 200K, the application still manages to keeps the m
 
 When rounds increase to 400K, we have 400,000 dictionaries of size 100 at the maximum. Each item consumes 125 bytes in chained dictionary as measured in Memory section. we use `100 * 125 * 400K = 5G` memory. When cache miss happens, the whole operation time is dominated by reading data from main memory and loading it into cache.
 
-According to [Computer Latency at a Human Scale](https://www.prowesscorp.com/computer-latency-at-a-human-scale/), reading from main RAM is around 100 nanosecond. Chained dictionary successful lookup time's increase from 22 to 267 nanoseconds likely caused by 2 L3 cache misses. Based on the algorithm of chained dictionary implementation in zeek, the key is a pointer to another address. The difference between successful lookups and unsuccessful lookups is that unsuccessful lookups finish probably on mismatched bucket, but successful lookups still need to compare keys. The reason.
+According to [Computer Latency at a Human Scale](https://www.prowesscorp.com/computer-latency-at-a-human-scale/), reading from main RAM is around 100 nanosecond. Chained dictionary successful lookup time's increase from 22 to 267 nanoseconds likely caused by 2 L3 cache misses. Based on the algorithm of chained dictionary implementation in zeek, the key is a pointer to another address. The difference between successful lookups and unsuccessful lookups is that unsuccessful lookups finish probably on mismatched bucket, but successful lookups still need to compare keys. 
 
-So we see chained dictionary performance deteriorates greatly. The worst is the successful lookup. The time spent for it increases 10 folds from 22 nanosecs to 267 nanosecs. At the same time, clustered dictionary performance also decreases a bit, but it's far better than chained dictionary. So clustered dictionary causes a lot less catch misses during lookup.
-
-Up to 200K rounds, the variation is due to measurement. 200K has the most data points to average and its close to less rounds. Measurements at 200K rounds should be closest to the real performance. So the criteria of finally measurement is to run with incremental rounds until it reaches a stable and usually minimal number so that it doesn't trigger too many cache misses.
+So we see chained dictionary performance deteriorates greatly. The worst is the successful lookup. The time spent for it increases 10 folds from 22 nanosecs to 267 nanosecs. At the same time, clustered dictionary performance also decreases a bit, but it's far better than chained dictionary. So clustered dictionary causes a lot less catch misses during lookup. The removal of the hash table pointer if one reason, the other reason is each item saves 32-bit hash and the key is compared by hash first. Only when hash conflicts the key is necessary to compare. For this reason, the successful lookup will most of time only load the content of the key once at last step.
 
 #### Clustered dictionary performance improvements
 
