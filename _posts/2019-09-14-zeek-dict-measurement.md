@@ -24,14 +24,25 @@ warning: large files (more than 1G) from git lfs will be downloaded into your lo
 
     git lfs fetch
 
+Precompiled targets are under directory zeek
+
+- zeek, the original zeek. compiled by
+    `./configure --enable-perftools`
+- zeek.stats, the original zeek compiled by
+    `CXXFLAGS="-DUSE_DICT_STATS" ./configure --enable-perftools`
+- zeek.open, the new zeek with clustered dictionary, compiled by,
+    `CXXFLAGS="-DUSE_OPEN_DICT" ./configure --enable-perftools`
+- zeek.open.stats, the new zeek with clustered dictionary as dict stats, compiled by
+    `CXXFLAGS="-DUSE_OPEN_DICT -DUSE_DICT_STATS" ./configure --enable-perftools`
+
 ## Dictionary Stats
 
 Zeek and zeek scripts use dictionaries extensively. Most dictionaries are created by script and live with tcp/udp sessions. Tables and sets in broscripts are both dictionaries internally. Some scripts such as SMB protocol handler use up to 5 dictionaries.
 
-cd ~/zeek.test/zeek
-./zeek.stats -r ../pcap/10K.pcap
-./zeek.stats -r ../pcap/100K.pcap
-./zeek.stats -r ../pcap/1M.pcap
+    cd ~/zeek.test/zeek
+    ./zeek.stats -r ../pcap/10K.pcap
+    ./zeek.stats -r ../pcap/100K.pcap
+    ./zeek.stats -r ../pcap/1M.pcap
 
 |dictionaries <br>of max entries</br>|10K.pcap|100K.pcap| 1M.pcap|%|
 |-----|--------|---------|--------|------|
