@@ -17,7 +17,7 @@ zeek deviates a little bit from the traditional chained hash table. It uses a dy
 
 A successful lookup of key has to follow 3 pointers: bucket array -> entry_ptr -> key_ptr.
 
-###
+### clustered dictionary
 
 zeek clustered dictionary put the entries directly in the table. It removes 2 extra pointers in chained dictionary: bucket_ptr and entry_ptr. It also stores key directly in the table if the key size <= 8. So when the key is less than 8 bytes, it removes 3 extra pointers during lookup.
 
