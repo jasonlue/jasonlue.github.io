@@ -5,6 +5,25 @@ date:   2019-09-14 17:02:14 -0700
 categories: zeek
 description: "The post measures space and time in zeek (zeek.org) with fixed number of SMB package capture files for chained dictionaries vs clustered dictionaries."
 ---
+## details of chained dictionary vs clustered dictionary
+
+Before the comparison, let's compare the details of both dictionary structure details first.
+
+### chained dictionary
+
+zeek deviates a little bit from the traditional chained hash table. It uses a dynamic array of initial size of 10 to replace the single link list. One of the major reasons is to avoid extra cost of pointer following. This improves lookup. On the other hand, as it leaves unused spaces in dynamic array, it uses a load factor of 3 to alleviate the space a bit. It causes hash map function to conflict on bucket at average of 3 on purpose.
+
+![chained-dict](/img/hashing/zeek-chain.dot.png)
+
+A successful lookup of key has to follow 3 pointers: bucket array -> entry_ptr -> key_ptr.
+
+###
+
+zeek clustered dictionary put the entries directly in the table. It removes 2 extra pointers in chained dictionary: bucket_ptr and entry_ptr. It also stores key directly in the table if the key size <= 8. So when the key is less than 8 bytes, it removes 3 extra pointers during lookup.
+
+![open-dict](/img/hashing/zeek-open.dot.png)
+
+A succeessful lookup of key of size <= 8 will not follow any pointers. It follows key_ptr for key_size > 8.
 
 ## Setup the environment for measurements
 
@@ -203,9 +222,9 @@ When the rounds are less than 200K, the application still manages to keeps the m
 
 When rounds increase to 400K, we have 400,000 dictionaries of size 100 at the maximum. Each item consumes 125 bytes in chained dictionary as measured in Memory section. we use `100 * 125 * 400K = 5G` memory. When cache miss happens, the whole operation time is dominated by reading data from main memory and loading it into cache.
 
-According to [Computer Latency at a Human Scale](https://www.prowesscorp.com/computer-latency-at-a-human-scale/), reading from main RAM is around 100 nanosecond. Chained dictionary successful lookup time's increase from 22 to 267 nanoseconds likely caused by 2 L3 cache misses. Based on the algorithm of chained dictionary implementation in zeek, the key is a pointer to another address. The difference between successful lookups and unsuccessful lookups is that unsuccessful lookups finish probably on mismatched bucket, but successful lookups still need to compare keys. 
+According to [Computer Latency at a Human Scale](https://www.prowesscorp.com/computer-latency-at-a-human-scale/), reading from main RAM is around 100 nanosecond. Chained dictionary successful lookup time's increase from 22 to 267 nanoseconds likely caused by 2 L3 cache misses. Based on the algorithm of chained dictionary implementation in zeek, the key is a pointer to another address. The difference between successful lookups and unsuccessful lookups is that unsuccessful lookups finish probably on mismatched bucket, but successful lookups still need to compare keys.
 
-So we see chained dictionary performance deteriorates greatly. The worst is the successful lookup. The time spent for it increases 10 folds from 22 nanosecs to 267 nanosecs. At the same time, clustered dictionary performance also decreases a bit, but it's far better than chained dictionary. So clustered dictionary causes a lot less catch misses during lookup. The removal of the hash table pointer if one reason, the other reason is each item saves 32-bit hash and the key is compared by hash first. Only when hash conflicts the key is necessary to compare. For this reason, the successful lookup will most of time only load the content of the key once at last step.
+So we see chained dictionary performance deteriorates greatly. The worst is the successful lookup. The time spent for it increases 10 folds from 22 nanosecs to 267 nanosecs. At the same time, clustered dictionary performance also decreases a bit, but it's far better than chained dictionary. So clustered dictionary causes a lot less catch misses during lookup. The removal of 2 extra pointers is the major reason.
 
 #### Clustered dictionary performance improvements
 
