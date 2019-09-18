@@ -10,7 +10,7 @@ description: "The post introduces Clustered Hashing idea: to flatten Chained Has
 
 Clustered Hashing is the flattened version of Chained Hashing. Chained Hashing links items of the same bucket together by pointers. Clustered Hashing clusters items of the same bucket together directly in the hash table.
 
-Heres the visual comparison of Chained and Clustered Hashing:
+Here's the visual comparison of Chained and Clustered Hashing:
 
 |Chained Hashing|Clustered Hashing|
 |---------------|-----------------|
@@ -32,12 +32,12 @@ Map function M usually is a single mod function below:
 
 There are a few issues with this map function:
 
-- table_size need to be a prime to make it really effective. And the increasingly large primes are hard, and expensive to find. When we compromise with just an odd large integer, the mapping function may perform worse. It results in more collisions.
+- table_size needs to be a prime to make it really effective. And the increasingly large primes are hard, and expensive to find. When we compromise with just an odd large integer, the mapping function may perform worse. It results in more collisions.
 - hash % table_size looks very simple, but is expensive to calculate. It uses division, which involves loop.
 - the bucket mapping depends heavily on the hash function. A bad hash function, for example, an integer identity function, may cause a lot of collisions.
 
 
-Fibonacci Hashing is a map function from hash to a range of (0, table_size). It solves all three issues above and add one more benefit in the case of incremental resizing.
+Fibonacci Hashing is a map function from hash to a range of (0, table_size). It solves all three issues above and add one more benefit in the case of incremental resizing, to be discussed in the next post: [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %})
 
 - table_size is always 2^N. so table_size is represented by bits N
 - bucket = M(hash,N) = lower N bits of (hash * 2^64 / phi) , phi = Golden Ratio = 1.618033987...
@@ -88,6 +88,7 @@ int Capacity()
 }
 ```
 
+In chained hash table, the bucket is the position, ie. the index of the table. In clustered hashing table, they are different. Bucket is what hash function is mapped to the range (0, table_size). And position is the index of the table in the range (0, table_size + ooverflow size).
 ## Item/Entry Attributes
 
 Each entry in the table has 3 attributes:
