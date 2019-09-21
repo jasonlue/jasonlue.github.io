@@ -64,7 +64,7 @@ Sacrifice in insert and remove to the extreme make lookup as fast as O(lgN). To 
 
 ### Hash Table
 
-For a item with key, we calculate an integer called hash through a hash function H: `hash = H(key)`. We allocate a table with table_size a few times larger than item count. We then map hash to the index of the table called bucket through another map function M: `bucket = M(hash, table_size)`. We then directly store item on position bucket, as shown below:
+For a item with a key, we calculate an integer called hash through a hash function H: `hash = H(key)`. We allocate a table with table_size a few times larger than item count. We then map hash to the index of the table called bucket through another map function M: `bucket = M(hash, table_size)`. We then directly store item on position bucket, as shown below:
 
 ![hash-table-basic](/img/hashing/basic.dot.png)
 
@@ -82,7 +82,7 @@ Sacrificing the space a few times makes lookup, insert and remove to be as fast 
 Not so fast.
 
 What if two items with K1 and K2, after function H, reaches the same hash?
-`H(K1) == H(K2)`? With the same hash, both items find the same bucket. Follow the previous logic item 2 will overwrite item1 on insert. Even if two hashes are different, `H(K1) != H(K2)`, mapping hash to bucket can still result in same bucket: `M(H(K1)) == M(H(K2))`.
+`H(K1) == H(K2)`? With the same hash, both items find the same bucket. Follow the previous logic item 2 will overwrite item1 on insert. Even if two hashes are different, `H(K1) != H(K2)`, mapping hash to bucket can still result in same bucket: `M(H(K1), table_size) == M(H(K2), table_size)`.
 
 The conflict is unavoidable. Conflict resolution is the key to implement hash tables.
 
@@ -90,7 +90,7 @@ The conflict is unavoidable. Conflict resolution is the key to implement hash ta
 
 ### Chain Conflicts Together
 
-Pointers seem to be the solution to many problems. Like the binary search tree, we use indirection to link certain items together. As shown below, instead of puting item direction in the table, we put a pointer in the table, which points to a single link list. Single link list holds all the items of the same bucket. In the following diagram:  
+Pointers seem to be the solution to many problems. Like the binary search tree, we use indirection to link certain items together. As shown below, instead of puting item directly in the table, we put a pointer in the table, which points to a single link list. Single link list holds all the items of the same bucket. In the following diagram:  
 `H(key) = key`,  H() is identity function, just for illustration only
 `M(hash,table_size)=hash%table_size`, M is frequently used simple mapping function: mod where `table_size=10`  
 
@@ -99,6 +99,8 @@ Pointers seem to be the solution to many problems. Like the binary search tree, 
 For example,  
 11: `M(H(11),10) = M(11,10) = 11%10 = 1` and  
 21: `M(H(21),10) = M(21,10) = 21%10 = 1`  
+
+Basically the least significant decimal digit is the bucket of the key.
 
 Both end up in the same bucket so they are chained together.
 With a good hash fucntion H and a reasonable table_size, sometimes with a good mapping function M, the average length(L) of the chain-link is small.
@@ -128,7 +130,7 @@ So what's the reasonable next step? Well, Obviously, While maintainng the  perfo
 
 ### Open Addressing Hash Table
 
-Withoug chaining conflicts together, the only other option is to find another bucket. The process of finding another empty spot is called probing. To insert an item while its bucket is taken, there are two ways.
+Without chaining conflicts together, the only other option is to find another bucket. The process of finding another empty spot is called probing. To insert an item while its bucket is taken, there are two ways.
 
 #### Appy a step parameter on hash function
 
@@ -146,7 +148,7 @@ It rehashes until an empty position is found. There is no upbound of i in this c
 
 #### Apply a step parameter on Mapping function M
 
-One way is to add a step parameter in mapping function.
+Another way is to add a step parameter in mapping function.
 
     `M'(hash, table_size, i) = M(M(hash,table_size) + F(i), table_size)
 
@@ -160,13 +162,13 @@ where i starts from 0 forward. Keep increasing i until finds empty spot. A typic
 
 If bucket of the item is not empty, Linear Probing finds the next position available. If i reaches the end of the table, it wraps around and start from 0 again. The maximum step is the table_size. It's guaranteed the next available position will be located within table_size steps when the table is not full.
 
-Below is an example of the open addressing hashing table with linear probing of the same elements in chained hash table. A open addring hash table is often slightly larger than the advertized table size to have a overflow region at the end to accomodate keys that falls into the last bucket in the table.
+Below is an example of the open addressing hashing table with linear probing of the same elements in chained hash table.
 
-Also noted is that the actual content of the table depends on the order of items inserted. Insert the same elements in another order renders a very different picture. 
+Also noted is that the actual content of the table depends on the order of items inserted. Insert the same elements in another order renders a very different picture.
 
 ###### insert
 
-######insert 10,11,12,17
+###### insert 10,11,12,17
 
 Item 10,11,12,17 are inserted into their buckets respectively. 
 
@@ -255,13 +257,14 @@ bucket(47)=7, start from position 7.
 
 Lookup starts with bucket and ends on the item found, an empty item, or loop through the whole table (reach table_size after wraparound). 
 
-lookup performance is highly deteriorated by too many tombstones.
+lookup performance is highly deteriorated by too many tombstones as result of remove.
 
 ##### remove
 
 The removed items has to be marked by tombstone in order not to stop lookup prematurely. If the removed item becomes empty item, the lookup stops and may not find some items inserted after the removed items.
 
 The tomstoned item is treated the same as empty item during insertion.
+
 The tomstoned item is treated as a no-match item during lookup.
 
 To show how each item ends up, the table does not resize up (load factor=1) on purpose. When load factor < 1, the longest distance, table_size, will likely not be reached. However, as you can see, the distance grows dramatically when the table is getting pretty full. In the extremely case, lookup of item 47 has the worst performance of O(N).
@@ -273,20 +276,20 @@ However, on the other hand, the memory is most efficiently used.
 While saving space, open address hash table adds some uncertainties.
 
 - There's a great deal of variance in lookup. 
-    Lookup in Chained Hash Table for an item that exists or not, takes an upbound of the most conflicts on the position. Unlike Chained Hash Table, Open Address Table usually has a great deal of variance in steps to find an item. The number is steps has little to do with the conflicts on that specific item. The same item may be found in one try, or it may be found in 1000+ tries. Even worse, lookup of an item that's not in the table takes most of time as it ends when an empty position is found.
+    Lookup in Chained Hash Table for an item that exists or not, takes an upbound of the most conflicts on the position. Unlike Chained Hash Table, Open Address Table usually has a great deal of variance in steps to find an item. The number of steps has little to do with the conflicts on that specific item. The same item may be found in one try, or it may be found in 1000+ tries. Even worse, lookup of an item that's not in the table takes most of time as it ends when an empty position is found.
 
 - There's no clear invariant on the data structure.
-    Chained Hash Table has a nice property: Every item in the chain belongs to the bucket it maps to from key `M(H(key))`. Before and after every operation you can put assertions on this property to make sure the operation is correctly performed. Items in Open Addressing Hash Table, either appear at its bucket, or they appear anywhere in the table. This makes some operations hard to verify.
+    Chained Hash Table has a nice property: Every item in the chain belongs to the bucket it maps to from key `M(H(key), table_size)`. Before and after every operation you can put assertions on this property to make sure the operation is correctly performed. Items in Open Addressing Hash Table, either appear at its bucket, or they appear anywhere in the table. This makes some operations hard to verify.
 
-What can we do to improve? Just as the thought process along the way, to make lookup more consistent, we have to think what we can sacrifice. From unsorted list to sorted list, we sacrifice the performance of `insert` for a better performance of lookup. From sorted list to binary search tree, we sacrifice space to improve `insert` and `delete`. From BST to Chained Hash Table we sacrifice more space to improve on `lookup`, `insert` and `remove`. From Chained Hash Table to Open addressing Hash Table we try to recoup some space back while maintain performance of `lookup`, `insert` and `remove`. To improve the uncertainty of `lookup`, is there something we can sacrifice?
+What can we do to improve? Just as the thought process goes along the way, to make lookup more consistent, we have to think what we can sacrifice. From unsorted list to sorted list, we sacrifice the performance of `insert` for a better performance of lookup. From sorted list to binary search tree, we sacrifice space to improve `insert` and `delete`. From BST to Chained Hash Table we sacrifice more space to improve on `lookup`, `insert` and `remove`. From Chained Hash Table to Open addressing Hash Table we try to recoup some space back while maintain performance of `lookup`, `insert` and `remove`. To improve the uncertainty of `lookup`, is there anything left that we can sacrifice?
 
-As it turns out, there is. To improve the worst case `lookup`, we sacrifice best case `lookup`.
+As it turns out, there is. To improve the worst case `lookup`, we can sacrifice best case `lookup`.
 
 ### Robinhood Hashing
 
 When we insert an item into hash table, we look for an empty position to put it in. Ideally the position is at its bucket. But if not, we keep looking for other positions via differnet strategies. Doing so we actually follow a hidden rule that when an item is in the table, we don't change its position anymore. This rule can lead to a really bad position when the table is pretty full and an empty position is far away.
 
-The alternative is to adjust the position of existing items if necessary during insertion. When looking for empty positions to insert the new item, Robinhood Hashing compares the to-be-inserted item distance from its bucket if it's inserted on the current position, if it's longer than the distance of the item occupying the current position. the to-be-inserted item swaps the item out and takes the position. Then it continues to look forward to insert the swapped out item. When it reaches the end of the table, it wraps around from beginning.
+The alternative is to adjust the position of existing items if necessary during insertion. When looking for empty positions to insert the new item, Robinhood Hashing compares the to-be-inserted item distance from its bucket if it's inserted on the current position. If it's longer than the distance of the item occupying the current position. the to-be-inserted item swaps the item out and takes the position. Then it continues to look forward to insert the swapped out item. When it reaches the end of the table, it wraps around from beginning.
 
 Robinhood Hashing can be applied to any open addressing hash item idea. Let's investigate how it applies to simplest case: linear probing.
 
@@ -381,7 +384,7 @@ bucket(47)=7, start from position 7.
 
 ![insert 47](/img/hashing/robinhood-insert-47.dot.png)
 
-##### Robinhood table structures
+#### Robinhood table structures
 
 If you look at the structure of items in Robinhood table, you can easily spot its characteristics: unlike the normal open address table, items of the same bucket are clustered together in Robinhood table. 
 
@@ -403,12 +406,14 @@ Since Robinhood Hashing idea applies to all methods of Open Addressing Hashing, 
 Let's take the cluster idea a bit further: We add overflow positions at the end of the table to avoid wrap-arounds. With the condition, we have another invariant: Clusters of bigger buckets always resides after the clusters of smaller buckets. ie. The clusters are in order of buckets. This small variation simplifies a few complex algorithms and paves the way for more complex algorithms on it.
 
 So what's Clustered Hashing? 
+
 - The flattened version of Chained Hashing.
 - An Open Addressing Hashing. It puts items directly in the table.
 - An Robinhood Hashing. It adjusts existing items while inserting new items.
 
 Clustered Hashing also sacrifices constant property during deletion and lookup.
-- It adjusts other existing items during while deleting items.
+
+- It adjusts other existing items while deleting items.
 - It adjusts existing items during lookup when incremental sizing is implemented.
 
 Heres the visual comparison of Chained and Clustered Hashing:
@@ -421,7 +426,7 @@ I'll discuss the details of Clustered Hashing operation in the next post: [Clust
 
 ## Lessons Learned
 
-**"There can be no progress, no achievements, without sacrifice, and a man's worldly success will be in the measure that he sacrifices." -James Allen, As a Man Thinketh**
+**"There can be no progress, no achievements, without sacrifice, and a man's worldly success will be in the measure that he sacrifices." -James Allen, As a Man Thinketh**.
 
 ## References
 

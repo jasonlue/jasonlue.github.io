@@ -16,7 +16,7 @@ Here's the visual comparison of Chained and Clustered Hashing:
 |---------------|-----------------|
 |![Chained](/img/hashing/chain.dot.png)|![Clustered](/img/hashing/cluster.dot.png) |
 
-The reasoning that leads to this data structure are here: [Clustered Hashing]({% link _posts/2019-08-19-clustered-hashing.md %}).
+The reasoning that leads to this data structure is here: [Clustered Hashing]({% link _posts/2019-08-19-clustered-hashing.md %}).
 
 ## Table Size & Map Function: Fibonacci Hashing
 
@@ -33,16 +33,18 @@ Map function M usually is a single mod function below:
 There are a few issues with this map function:
 
 - table_size needs to be a prime to make it really effective. And the increasingly large primes are hard, and expensive to find. When we compromise with just an odd large integer, the mapping function may perform worse. It results in more collisions.
-- hash % table_size looks very simple, but is expensive to calculate. It uses division, which involves loop.
+- hash % table_size looks very simple, but is expensive to calculate. It uses division, which involves loops.
 - the bucket mapping depends heavily on the hash function. A bad hash function, for example, an integer identity function, may cause a lot of collisions.
 
 
-Fibonacci Hashing is a map function from hash to a range of (0, table_size). It solves all three issues above and add one more benefit in the case of incremental resizing, to be discussed in the next post: [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %})
+Fibonacci Hashing is a map function from hash to a range of (0, table_size). It solves all three issues above and adds one more benefit in the case of incremental resizing, to be discussed in the next post: [Clustered Hashing: Incremental Resize]({% link _posts/2019-09-02-clustered-hashing-incremental-resize.md %})
 
 - table_size is always 2^N. so table_size is represented by bits N
 - bucket = M(hash,N) = lower N bits of (hash * 2^64 / phi) , phi = Golden Ratio = 1.618033987...
 
 2^64/phi = 11400714819323198485
+
+You can find details about Fibonacci Hashing here: [Malte Skarupke, Fibonacci Hashing: The Optimization that the World Forgot](https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/)
 
 ```c++
 hash_t FibHash(hash_t hash)
@@ -88,7 +90,7 @@ int Capacity()
 }
 ```
 
-In chained hash table, the bucket is the position, ie. the index of the table. In clustered hashing table, they are different. Bucket is what hash function is mapped to the range (0, table_size). And position is the index of the table in the range (0, table_size + ooverflow size).
+In chained hash table, the bucket is the position, ie. the index of the table. In clustered hashing table, they are different. Bucket is what hash function is mapped to the range (0, table_size). And position is the index of the table in the range (0, table_size + overflow size).
 ## Item/Entry Attributes
 
 Each entry in the table has 3 attributes:
