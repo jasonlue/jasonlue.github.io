@@ -61,6 +61,21 @@ Precompiled targets are under directory zeek
 
     `CXXFLAGS="-DUSE_OPEN_DICT -DUSE_DICT_STATS" ./configure --enable-perftools`
 
+## Inputs
+
+Uses 3 pcap files generated from `smbtorture.cap` through the procedure in post [reprooduce-performance-issues-in-network-server-applications](% link /_posts/reprooduce-performance-issues-in-network-server-applications.md %})
+
+![smb-split-trex-cap-app.dot.png](/img/trex/smb-split-trex-cap-app.dot.png)
+
+It measures zeek's dictionary performance very effectively.
+
+|name     |description
+|---------|-------
+|10K.pcap | 10,000 intensified smb packets
+|100K.pcap| 100,000 intensified smb packets
+|1M.pcap  | 1,000,000 inteensified smb packets
+
+
 ## Dictionary Stats
 
 Zeek and zeek scripts use dictionaries extensively. Most dictionaries are created by script and live with tcp/udp sessions. Tables and sets in broscripts are both dictionaries internally. Some scripts such as SMB protocol handler use up to 5 dictionaries.
@@ -304,3 +319,8 @@ Time is measured by running 12 rounds, dropping min and max and averaging the re
 |zeek with clustered dict             |      24|     20.2|  12.41|
 
 ![app-time.png](/img/zeek/app-time.png)
+
+
+## References
+
+[reprooduce-performance-issues-in-network-server-applications](% link /_posts/reprooduce-performance-issues-in-network-server-applications.md %})
